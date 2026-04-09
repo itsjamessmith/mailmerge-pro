@@ -1247,4 +1247,4 @@ The Sales Team
 
 ---
 
-*© 2024 MailMerge-Pro. All rights reserved.*
+*© 2026 MailMerge-Pro. All rights reserved.*

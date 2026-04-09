@@ -586,4 +586,4 @@ Start-Process "outlook.exe"
 
 ---
 
-*© 2024 MailMerge-Pro. For internal IT administration use.*
+*© 2026 MailMerge-Pro. For internal IT administration use.*

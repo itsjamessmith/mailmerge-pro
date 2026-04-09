@@ -412,29 +412,58 @@ async function signIn() {
 }
 
 async function signOut() {
-    console.log("signOut");
+    console.log("signOut: starting");
     try {
         if (msalInstance) {
             const accounts = msalInstance.getAllAccounts();
+            console.log("signOut: found", accounts.length, "accounts");
+            
+            // Method 1: Try MSAL logout (works in modern browsers / new Outlook)
             if (accounts.length > 0) {
-                // Clear the specific account from cache
-                accounts.forEach(acct => {
-                    msalInstance.setActiveAccount(null);
-                    try { msalInstance.getTokenCache().removeAccount(acct); } catch(_) {}
-                });
-            }
-            // Clear all MSAL cache from localStorage
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith("msal.") || key.includes("login.microsoftonline")) {
-                    localStorage.removeItem(key);
+                try {
+                    await msalInstance.logoutPopup({ account: accounts[0] });
+                    console.log("signOut: logoutPopup succeeded");
+                } catch (popupErr) {
+                    console.warn("signOut: logoutPopup failed (expected in classic Outlook):", popupErr.message);
+                    // Method 2: Manual cache clear (fallback for classic Outlook)
+                    try {
+                        accounts.forEach(acct => {
+                            try { msalInstance.getTokenCache().removeAccount(acct); } catch(_) {}
+                        });
+                    } catch(_) {}
                 }
-            });
+            }
+            
+            // Method 3: Brute force clear all MSAL keys from storage
+            try {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.indexOf("msal") !== -1 || key.indexOf("login.microsoftonline") !== -1 ||
+                        key.indexOf("authority") !== -1 || key.indexOf("token") !== -1)) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(k => { try { localStorage.removeItem(k); } catch(_) {} });
+                console.log("signOut: cleared", keysToRemove.length, "localStorage keys");
+            } catch (storageErr) {
+                console.warn("signOut: localStorage clear failed:", storageErr.message);
+            }
+            
+            // Method 4: Recreate MSAL instance (nuclear option)
+            try {
+                msalInstance = new msal.PublicClientApplication(msalConfig);
+                await msalInstance.initialize();
+                console.log("signOut: MSAL instance recreated");
+            } catch(_) {}
         }
     } catch (err) {
-        console.warn("signOut cache clear error:", err);
+        console.warn("signOut error:", err);
     }
+    
+    appState.userEmail = "";
     updateAuthUI(null);
-    console.log("signOut complete");
+    console.log("signOut: complete");
 }
 
 async function getGraphToken() {
