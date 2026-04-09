@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>MailMerge-Pro</title>
     <link rel="stylesheet" href="taskpane.css"/>
-    <!-- Office.js library -->
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <!-- SheetJS for reading Excel files client-side -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -31,7 +29,7 @@
             <h2>Upload Recipient Data</h2>
             <p>Select an Excel (.xlsx) or CSV file with your recipients.</p>
             <div class="file-upload">
-                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/>
                 <label for="fileInput" class="btn btn-primary">Choose File</label>
                 <span id="fileName" class="file-name">No file selected</span>
             </div>
@@ -51,16 +49,21 @@
                 <select id="mapTo" class="select"></select>
             </div>
             <div class="form-group">
-                <label>CC <span class="optional">(optional)</span></label>
+                <label>CC <span class="optional">(optional per-row column)</span></label>
                 <select id="mapCC" class="select"></select>
             </div>
             <div class="form-group">
-                <label>BCC <span class="optional">(optional)</span></label>
+                <label>BCC <span class="optional">(optional per-row column)</span></label>
                 <select id="mapBCC" class="select"></select>
             </div>
             <div class="form-group">
-                <label>Subject <span class="optional">(optional per-row)</span></label>
+                <label>Subject <span class="optional">(optional per-row column)</span></label>
                 <select id="mapSubject" class="select"></select>
+            </div>
+            <div class="form-group">
+                <label>Attachments <span class="optional">(optional — column with filenames)</span></label>
+                <select id="mapAttachments" class="select"></select>
+                <small>Column should contain filenames separated by semicolons</small>
             </div>
             <div class="form-row">
                 <button id="btnStep2Back" class="btn btn-secondary">← Back</button>
@@ -72,17 +75,22 @@
         <div id="step3" class="step-content">
             <h2>Compose Email</h2>
             <div class="form-group">
+                <label>From / Send As <span class="optional">(optional alias)</span></label>
+                <input type="text" id="fromAlias" class="input" placeholder="Leave blank to use default. e.g. sales@company.com"/>
+                <small>Only works if you have Send As permission for this address</small>
+            </div>
+            <div class="form-group">
                 <label>Subject Line</label>
-                <input type="text" id="emailSubject" class="input" placeholder="e.g. Hello {FirstName}, check this out!" />
+                <input type="text" id="emailSubject" class="input" placeholder="e.g. Hello {FirstName}, check this out!"/>
                 <small>Use {ColumnName} for personalization</small>
             </div>
             <div class="form-group">
-                <label>Global CC <span class="optional">(all emails)</span></label>
-                <input type="text" id="globalCC" class="input" placeholder="e.g. manager@company.com" />
+                <label>Global CC <span class="optional">(applied to all emails)</span></label>
+                <input type="text" id="globalCC" class="input" placeholder="e.g. manager@company.com; team@company.com"/>
             </div>
             <div class="form-group">
-                <label>Global BCC <span class="optional">(all emails)</span></label>
-                <input type="text" id="globalBCC" class="input" placeholder="e.g. audit@company.com" />
+                <label>Global BCC <span class="optional">(applied to all emails)</span></label>
+                <input type="text" id="globalBCC" class="input" placeholder="e.g. audit@company.com"/>
             </div>
             <div class="form-group">
                 <label>Email Body</label>
@@ -98,8 +106,31 @@ Best regards,
 The Team"></textarea>
             </div>
             <div class="form-group">
-                <label><input type="checkbox" id="chkSendAsHtml" checked /> Send as HTML</label>
+                <label><input type="checkbox" id="chkSendAsHtml" checked/> Send as HTML (convert line breaks to &lt;br&gt;)</label>
             </div>
+
+            <!-- Global Attachments -->
+            <div class="form-group">
+                <label>Global Attachments <span class="optional">(attached to every email)</span></label>
+                <div class="attachment-upload-area" id="globalAttachmentArea">
+                    <input type="file" id="globalAttachmentInput" multiple/>
+                    <label for="globalAttachmentInput" class="btn btn-secondary btn-small">+ Add Files</label>
+                    <div id="globalAttachmentList" class="attachment-list"></div>
+                </div>
+            </div>
+
+            <!-- Per-Recipient Attachment Files -->
+            <div class="form-group" id="perRecipientAttachmentSection" style="display:none;">
+                <label>Per-Recipient Attachment Files</label>
+                <p class="hint">Upload the files referenced in your Attachments column. Filenames must match exactly.</p>
+                <div class="attachment-upload-area">
+                    <input type="file" id="perRecipientAttachmentInput" multiple/>
+                    <label for="perRecipientAttachmentInput" class="btn btn-secondary btn-small">+ Upload Files</label>
+                    <div id="perRecipientAttachmentList" class="attachment-list"></div>
+                </div>
+                <div id="missingAttachmentWarning" class="warning-box" style="display:none;"></div>
+            </div>
+
             <div class="form-row">
                 <button id="btnStep3Back" class="btn btn-secondary">← Back</button>
                 <button id="btnStep3Next" class="btn btn-primary">Next →</button>
@@ -108,26 +139,29 @@ The Team"></textarea>
 
         <!-- Step 4: Review & Send -->
         <div id="step4" class="step-content">
-            <h2>Review & Send</h2>
+            <h2>Review &amp; Send</h2>
             <div id="reviewSummary" class="review-summary"></div>
             <div id="previewEmail" class="email-preview"></div>
             <div class="form-group">
                 <label>Delay between emails (seconds)</label>
-                <input type="number" id="sendDelay" class="input input-small" value="1" min="0" max="30" />
+                <input type="number" id="sendDelay" class="input input-small" value="1" min="0" max="60"/>
             </div>
             <div class="form-group">
                 <label>
-                    <input type="checkbox" id="chkDraftOnly" />
-                    <strong>Preview only</strong> — save to Drafts (don't send)
+                    <input type="checkbox" id="chkDraftOnly"/>
+                    <strong>Preview mode</strong> — save as Drafts instead of sending
                 </label>
             </div>
-            <div class="form-row">
-                <button id="btnStep4Back" class="btn btn-secondary">← Back</button>
-                <button id="btnSend" class="btn btn-send">🚀 Send All Emails</button>
+            <div class="btn-group">
+                <div class="form-row">
+                    <button id="btnStep4Back" class="btn btn-secondary">← Back</button>
+                    <button id="btnTestEmail" class="btn btn-test">🧪 Test Email</button>
+                </div>
+                <button id="btnSend" class="btn btn-send btn-next">🚀 Send All Emails</button>
             </div>
             <div id="progressContainer" class="progress-container" style="display:none;">
                 <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
-                <p id="progressText" class="progress-text">Sending...</p>
+                <p id="progressText" class="progress-text"></p>
             </div>
             <div id="resultsContainer" class="results" style="display:none;"></div>
         </div>
