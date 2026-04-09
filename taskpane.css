@@ -17,10 +17,33 @@ body {
     text-align: center;
     padding: 10px 0 6px;
     border-bottom: 2px solid #0078d4;
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 .header h1 { font-size: 18px; color: #0078d4; margin: 0; }
 .subtitle { font-size: 11px; color: #666; margin-top: 2px; }
+
+/* Auth bar */
+.auth-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 12px;
+    border-radius: 0 0 4px 4px;
+    font-size: 11px;
+    gap: 8px;
+}
+.auth-status {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #555;
+}
+.auth-status.signed-in { color: #107c10; font-weight: 600; }
+.auth-status.error { color: #d32f2f; }
 
 /* Step indicator */
 .steps-indicator {

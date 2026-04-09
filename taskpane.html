@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="taskpane.css"/>
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 </head>
 <body>
     <div id="app">
@@ -14,6 +15,13 @@
         <div class="header">
             <h1>📧 MailMerge-Pro</h1>
             <p class="subtitle">Personalized bulk email from Outlook</p>
+        </div>
+
+        <!-- Auth status bar -->
+        <div id="authBar" class="auth-bar">
+            <span id="authStatus" class="auth-status">Initializing…</span>
+            <button id="btnSignIn" class="btn btn-primary btn-small" style="display:none;">Sign In</button>
+            <button id="btnSignOut" class="btn btn-secondary btn-small" style="display:none;">Sign Out</button>
         </div>
 
         <!-- Step indicator -->

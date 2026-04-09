@@ -1,9 +1,30 @@
 /* MailMerge-Pro — Outlook Web Add-in JavaScript
- * Uses Outlook REST API v2.0 via getCallbackTokenAsync for bulk sending.
+ * Uses MSAL.js 2.0 + Microsoft Graph API for authentication and email sending.
  * NO alert/confirm/prompt — all feedback via DOM.
  */
 
 "use strict";
+
+// ========== MSAL Configuration ==========
+
+const msalConfig = {
+    auth: {
+        clientId: "360e4343-614f-4f70-a650-c020868516fc",
+        authority: "https://login.microsoftonline.com/e67c588e-f654-4727-b794-1ca5df7b6ee9",
+        redirectUri: "https://itsjamessmith.github.io/mailmerge-pro/taskpane.html"
+    },
+    cache: {
+        cacheLocation: "localStorage"
+    }
+};
+
+const loginRequest = {
+    scopes: ["Mail.Send", "Mail.ReadWrite", "User.Read"]
+};
+
+const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
+
+let msalInstance = null;
 
 // ========== Application State ==========
 
@@ -15,24 +36,152 @@ const appState = {
     globalAttachments: new Map(),   // filename -> { name, contentBytes (base64), contentType }
     perRecipientFiles: new Map(),   // filename (lowercase) -> { name, contentBytes, contentType }
     results: [],
-    sending: false
+    sending: false,
+    userEmail: ""                   // signed-in user's email for test mode
 };
 
 // ========== Office.js Initialization ==========
 
-Office.onReady(function (info) {
+Office.onReady(async function (info) {
     console.log("Office.onReady:", info.host, info.platform);
+    await initMsal();
     initUI();
 });
 
 if (typeof Office === "undefined") {
-    document.addEventListener("DOMContentLoaded", initUI);
+    document.addEventListener("DOMContentLoaded", async () => {
+        await initMsal();
+        initUI();
+    });
+}
+
+// ========== MSAL Initialization ==========
+
+async function initMsal() {
+    console.log("initMsal: creating PublicClientApplication");
+    const authStatusEl = document.getElementById("authStatus");
+    const btnSignIn = document.getElementById("btnSignIn");
+    const btnSignOut = document.getElementById("btnSignOut");
+
+    try {
+        msalInstance = new msal.PublicClientApplication(msalConfig);
+        await msalInstance.initialize();
+        console.log("MSAL initialized successfully");
+
+        // Handle redirect promise (in case page was loaded after redirect)
+        try {
+            const response = await msalInstance.handleRedirectPromise();
+            if (response) {
+                console.log("handleRedirectPromise: got token for", response.account.username);
+            }
+        } catch (redirectErr) {
+            console.warn("handleRedirectPromise error:", redirectErr);
+        }
+
+        // Check if already signed in
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+            console.log("Already signed in as:", accounts[0].username);
+            updateAuthUI(accounts[0]);
+        } else {
+            authStatusEl.textContent = "Not signed in";
+            btnSignIn.style.display = "inline-block";
+            btnSignOut.style.display = "none";
+        }
+    } catch (err) {
+        console.error("MSAL init error:", err);
+        authStatusEl.textContent = "Auth init failed";
+        authStatusEl.classList.add("error");
+        btnSignIn.style.display = "inline-block";
+        btnSignOut.style.display = "none";
+    }
+}
+
+function updateAuthUI(account) {
+    const authStatusEl = document.getElementById("authStatus");
+    const btnSignIn = document.getElementById("btnSignIn");
+    const btnSignOut = document.getElementById("btnSignOut");
+
+    if (account) {
+        authStatusEl.textContent = "✅ " + account.username;
+        authStatusEl.classList.add("signed-in");
+        authStatusEl.classList.remove("error");
+        btnSignIn.style.display = "none";
+        btnSignOut.style.display = "inline-block";
+        appState.userEmail = account.username;
+    } else {
+        authStatusEl.textContent = "Not signed in";
+        authStatusEl.classList.remove("signed-in");
+        btnSignIn.style.display = "inline-block";
+        btnSignOut.style.display = "none";
+        appState.userEmail = "";
+    }
+}
+
+async function signIn() {
+    console.log("signIn: starting interactive login");
+    const authStatusEl = document.getElementById("authStatus");
+    try {
+        const result = await msalInstance.acquireTokenPopup(loginRequest);
+        console.log("signIn success:", result.account.username);
+        updateAuthUI(result.account);
+        return result.accessToken;
+    } catch (err) {
+        console.error("signIn error:", err);
+        if (err.message && err.message.includes("popup_window_error")) {
+            authStatusEl.textContent = "Pop-up blocked. Please allow pop-ups for this site and click Sign In again.";
+            authStatusEl.classList.add("error");
+        } else if (err.message && err.message.includes("user_cancelled")) {
+            authStatusEl.textContent = "Sign-in cancelled. Click Sign In to try again.";
+        } else {
+            authStatusEl.textContent = "Sign-in failed: " + (err.message || String(err));
+            authStatusEl.classList.add("error");
+        }
+        throw err;
+    }
+}
+
+function signOut() {
+    console.log("signOut: clearing account");
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+        msalInstance.clearCache();
+    }
+    updateAuthUI(null);
+}
+
+async function getGraphToken() {
+    if (!msalInstance) throw new Error("MSAL not initialized. Please refresh the page.");
+
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+        try {
+            const silentResult = await msalInstance.acquireTokenSilent({
+                ...loginRequest,
+                account: accounts[0]
+            });
+            console.log("getGraphToken: silent token acquired");
+            updateAuthUI(accounts[0]);
+            return silentResult.accessToken;
+        } catch (silentErr) {
+            console.warn("Silent token failed, falling back to popup:", silentErr.message);
+        }
+    }
+
+    // Interactive fallback
+    return await signIn();
 }
 
 // ========== UI Initialization ==========
 
 function initUI() {
     console.log("initUI: binding event listeners");
+
+    // Auth buttons
+    document.getElementById("btnSignIn").addEventListener("click", async () => {
+        try { await signIn(); } catch (_) { /* error shown in UI */ }
+    });
+    document.getElementById("btnSignOut").addEventListener("click", signOut);
 
     // Step 1: File input
     document.getElementById("fileInput").addEventListener("change", handleFileUpload);
@@ -338,6 +487,8 @@ function checkMissingAttachments() {
     const warningEl = document.getElementById("missingAttachmentWarning");
     if (missing.length > 0) {
         warningEl.style.display = "block";
+        warningEl.style.borderColor = "#f9a825";
+        warningEl.style.background = "#fff8e1";
         warningEl.innerHTML = `⚠️ Missing ${missing.length} file(s): <strong>${missing.map(escapeHtml).join(", ")}</strong>`;
     } else if (allNeeded.size > 0) {
         warningEl.style.display = "block";
@@ -429,31 +580,9 @@ function mergeFields(template, row) {
     return result;
 }
 
-// ========== REST API Helpers ==========
+// ========== Microsoft Graph API Helpers ==========
 
-function getRestToken() {
-    return new Promise((resolve, reject) => {
-        if (!Office.context || !Office.context.mailbox || !Office.context.mailbox.getCallbackTokenAsync) {
-            reject(new Error("Office.context.mailbox.getCallbackTokenAsync is not available. Ensure Mailbox requirement set 1.5+ is supported."));
-            return;
-        }
-        Office.context.mailbox.getCallbackTokenAsync({ isRest: true }, function (result) {
-            if (result.status === Office.AsyncResultStatus.Succeeded) {
-                console.log("REST token obtained successfully");
-                resolve(result.value);
-            } else {
-                console.error("Failed to get REST token:", result.error);
-                reject(new Error("Failed to get REST token: " + (result.error.message || result.error.code)));
-            }
-        });
-    });
-}
-
-function getRestUrl() {
-    return Office.context.mailbox.restUrl;
-}
-
-async function restFetch(url, token, method, body) {
+async function graphFetch(url, token, method, body) {
     const options = {
         method: method || "GET",
         headers: {
@@ -465,7 +594,7 @@ async function restFetch(url, token, method, body) {
         options.body = JSON.stringify(body);
     }
 
-    console.log(`REST ${method} ${url}`);
+    console.log(`Graph ${method} ${url}`);
     const response = await fetch(url, options);
 
     if (!response.ok) {
@@ -476,6 +605,17 @@ async function restFetch(url, token, method, body) {
                 errMsg += ": " + errBody.error.message;
             }
         } catch (_) { /* ignore parse error */ }
+
+        // Provide user-friendly messages for common errors
+        if (response.status === 401) {
+            throw new Error("Session expired. Please sign in again.");
+        }
+        if (response.status === 403) {
+            throw new Error("Permission denied. Ask your admin to grant Mail.Send permission.");
+        }
+        if (response.status === 429) {
+            throw new Error("THROTTLED:" + errMsg);
+        }
         throw new Error(errMsg);
     }
 
@@ -487,45 +627,45 @@ async function restFetch(url, token, method, body) {
     return null;
 }
 
-// ========== Email Sending via REST API ==========
+// ========== Email Sending via Microsoft Graph ==========
 
 function buildRecipientList(addressStr) {
     if (!addressStr) return [];
     return addressStr.split(/[;,]/)
         .map(e => e.trim())
         .filter(Boolean)
-        .map(email => ({ EmailAddress: { Address: email } }));
+        .map(email => ({ emailAddress: { address: email } }));
 }
 
-function buildMessagePayload(to, cc, bcc, subject, body, asHtml, fromAlias) {
+function buildGraphMessage(to, cc, bcc, subject, body, asHtml, fromAlias) {
     const message = {
-        Subject: subject,
-        Body: {
-            ContentType: asHtml ? "HTML" : "Text",
-            Content: asHtml ? body.replace(/\n/g, "<br/>") : body
+        subject: subject,
+        body: {
+            contentType: asHtml ? "HTML" : "Text",
+            content: asHtml ? body.replace(/\n/g, "<br/>") : body
         },
-        ToRecipients: buildRecipientList(to)
+        toRecipients: buildRecipientList(to)
     };
 
     const ccRecipients = buildRecipientList(cc);
-    if (ccRecipients.length > 0) message.CcRecipients = ccRecipients;
+    if (ccRecipients.length > 0) message.ccRecipients = ccRecipients;
 
     const bccRecipients = buildRecipientList(bcc);
-    if (bccRecipients.length > 0) message.BccRecipients = bccRecipients;
+    if (bccRecipients.length > 0) message.bccRecipients = bccRecipients;
 
     if (fromAlias) {
-        message.From = { EmailAddress: { Address: fromAlias } };
+        message.from = { emailAddress: { address: fromAlias } };
     }
 
     return message;
 }
 
-function buildAttachmentPayload(att) {
+function buildGraphAttachment(att) {
     return {
-        "@odata.type": "#Microsoft.OutlookServices.FileAttachment",
-        Name: att.name,
-        ContentType: att.contentType,
-        ContentBytes: att.contentBytes
+        "@odata.type": "#microsoft.graph.fileAttachment",
+        name: att.name,
+        contentType: att.contentType,
+        contentBytes: att.contentBytes
     };
 }
 
@@ -557,38 +697,38 @@ function collectAttachmentsForRow(row) {
     return attachments;
 }
 
-async function sendOneEmail(restUrl, token, to, cc, bcc, subject, body, asHtml, fromAlias, attachments, draftOnly) {
-    const message = buildMessagePayload(to, cc, bcc, subject, body, asHtml, fromAlias);
+async function sendOneEmail(token, to, cc, bcc, subject, body, asHtml, fromAlias, attachments, draftOnly) {
+    const message = buildGraphMessage(to, cc, bcc, subject, body, asHtml, fromAlias);
 
     if (attachments.length === 0 && !draftOnly) {
-        // Simple send — no attachments, no draft needed
-        await restFetch(restUrl + "/v2.0/me/sendmail", token, "POST", {
-            Message: message,
-            SaveToSentItems: true
+        // Simple send — no attachments, no draft needed (faster path)
+        await graphFetch(GRAPH_BASE + "/me/sendMail", token, "POST", {
+            message: message,
+            saveToSentItems: true
         });
         return;
     }
 
     // Create draft first (needed for attachments or draft-only mode)
-    const draft = await restFetch(restUrl + "/v2.0/me/messages", token, "POST", message);
-    const messageId = draft.Id;
+    const draft = await graphFetch(GRAPH_BASE + "/me/messages", token, "POST", message);
+    const messageId = draft.id;
     console.log("Created draft:", messageId);
 
-    // Add attachments
+    // Add attachments one at a time
     for (const att of attachments) {
-        await restFetch(
-            restUrl + "/v2.0/me/messages/" + encodeURIComponent(messageId) + "/attachments",
+        await graphFetch(
+            GRAPH_BASE + "/me/messages/" + encodeURIComponent(messageId) + "/attachments",
             token,
             "POST",
-            buildAttachmentPayload(att)
+            buildGraphAttachment(att)
         );
         console.log("Added attachment:", att.name);
     }
 
     if (!draftOnly) {
         // Send the draft
-        await restFetch(
-            restUrl + "/v2.0/me/messages/" + encodeURIComponent(messageId) + "/send",
+        await graphFetch(
+            GRAPH_BASE + "/me/messages/" + encodeURIComponent(messageId) + "/send",
             token,
             "POST",
             null
@@ -613,7 +753,7 @@ async function executeMerge(testMode) {
         const fromAlias = document.getElementById("fromAlias").value.trim();
         const sendAsHtml = document.getElementById("chkSendAsHtml").checked;
         const draftOnly = document.getElementById("chkDraftOnly").checked;
-        const delay = parseInt(document.getElementById("sendDelay").value) || 1;
+        let delay = parseInt(document.getElementById("sendDelay").value) || 1;
 
         if (!subject && !appState.mapping.subject) {
             showStatus("⚠️ Please enter a subject line or map a Subject column.", "error");
@@ -638,16 +778,15 @@ async function executeMerge(testMode) {
         hideResults();
 
         const modeLabel = testMode ? "Test" : (draftOnly ? "Drafting" : "Sending");
-        updateProgress(0, total, `${modeLabel}: getting API token...`);
+        updateProgress(0, total, `${modeLabel}: authenticating...`);
 
-        // Get REST API token once
-        let token, restUrl;
+        // Get Graph API token
+        let token;
         try {
-            token = await getRestToken();
-            restUrl = getRestUrl();
-            console.log("REST URL:", restUrl);
+            token = await getGraphToken();
+            console.log("Graph token acquired");
         } catch (tokenErr) {
-            showStatus("❌ Could not get API token: " + tokenErr.message, "error");
+            showStatus("❌ Could not authenticate: " + escapeHtml(tokenErr.message || String(tokenErr)), "error");
             appState.sending = false;
             setButtonsDisabled(false);
             document.getElementById("progressContainer").style.display = "none";
@@ -655,8 +794,24 @@ async function executeMerge(testMode) {
         }
 
         if (testMode) {
-            // For test mode, send the first row to the user's own mailbox
-            const testTo = Office.context.mailbox.userProfile.emailAddress;
+            // For test mode, send to the signed-in user's own mailbox
+            let testTo = appState.userEmail;
+            if (!testTo) {
+                // Fetch from Graph profile if not yet known
+                try {
+                    const profile = await graphFetch(GRAPH_BASE + "/me", token, "GET");
+                    testTo = profile.mail || profile.userPrincipalName;
+                    appState.userEmail = testTo;
+                    console.log("Fetched user email from Graph:", testTo);
+                } catch (profileErr) {
+                    showStatus("❌ Could not determine your email address: " + escapeHtml(profileErr.message), "error");
+                    appState.sending = false;
+                    setButtonsDisabled(false);
+                    document.getElementById("progressContainer").style.display = "none";
+                    return;
+                }
+            }
+
             updateProgress(0, 1, `${modeLabel}: sending to ${testTo}...`);
 
             const row = rowsToSend[0];
@@ -665,7 +820,6 @@ async function executeMerge(testMode) {
                 : mergeFields(subject, row);
             const mergedBody = mergeFields(body, row);
 
-            // Build CC/BCC
             let ccList = "";
             if (appState.mapping.cc && row[appState.mapping.cc]) ccList = String(row[appState.mapping.cc]);
             if (globalCC) ccList = ccList ? ccList + ";" + globalCC : globalCC;
@@ -678,7 +832,7 @@ async function executeMerge(testMode) {
             const testSubject = "[TEST] " + mergedSubject;
 
             try {
-                await sendOneEmail(restUrl, token, testTo, "", "", testSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
+                await sendOneEmail(token, testTo, "", "", testSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
                 updateProgress(1, 1, "Done!");
                 showStatus(
                     `✅ Test email ${draftOnly ? "saved as draft" : "sent"} to ${escapeHtml(testTo)} — check your ${draftOnly ? "Drafts" : "inbox"}!`,
@@ -728,13 +882,50 @@ async function executeMerge(testMode) {
             updateProgress(i, total, `${modeLabel} ${i + 1} of ${total} — ${escapeHtml(toAddr)}`);
 
             try {
-                await sendOneEmail(restUrl, token, toAddr, ccList, bccList, mergedSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
+                await sendOneEmail(token, toAddr, ccList, bccList, mergedSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
                 sent++;
                 appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
             } catch (err) {
-                errors++;
-                appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: err.message || String(err) });
-                console.error(`Error sending to ${toAddr}:`, err);
+                const errMsg = err.message || String(err);
+
+                // Handle rate limiting with auto-retry
+                if (errMsg.startsWith("THROTTLED:")) {
+                    const oldDelay = delay;
+                    delay = Math.max(delay * 2, 5);
+                    console.warn(`Rate limited at row ${i + 2}. Increasing delay from ${oldDelay}s to ${delay}s`);
+                    updateProgress(i, total, `Rate limited. Increasing delay to ${delay}s... retrying ${escapeHtml(toAddr)}`);
+                    document.getElementById("sendDelay").value = delay;
+                    await sleep(delay * 1000);
+
+                    // Retry once
+                    try {
+                        await sendOneEmail(token, toAddr, ccList, bccList, mergedSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
+                        sent++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
+                        continue;
+                    } catch (retryErr) {
+                        errors++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr) });
+                        console.error(`Retry failed for ${toAddr}:`, retryErr);
+                    }
+                } else if (errMsg === "Session expired. Please sign in again.") {
+                    // Try to re-acquire token and retry
+                    console.warn("Token expired, re-acquiring...");
+                    try {
+                        token = await getGraphToken();
+                        await sendOneEmail(token, toAddr, ccList, bccList, mergedSubject, mergedBody, sendAsHtml, fromAlias, attachments, draftOnly);
+                        sent++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
+                        continue;
+                    } catch (retryErr) {
+                        errors++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr) });
+                    }
+                } else {
+                    errors++;
+                    appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: errMsg });
+                    console.error(`Error sending to ${toAddr}:`, err);
+                }
             }
 
             // Throttle between emails
@@ -793,7 +984,7 @@ function showResultsTable(total, sent, errors, draftOnly) {
     if (errors > 0) html += `<p><strong>Errors:</strong> ${errors}</p>`;
 
     // Detailed results table
-    html += `<table class="results-table"><tr><th>Row</th><th>To</th><th>Status</th></tr>`;
+    html += `<table class="results-table"><tr><th>Row</th><th>Email</th><th>Status</th></tr>`;
     for (const r of appState.results) {
         const statusClass = r.status === "Error" ? "status-err" : "status-ok";
         const statusText = r.status === "Error"
