@@ -664,12 +664,20 @@ function renderPerRecipientAttachmentList() {
 function checkMissingAttachments() {
     if (!appState.mapping.attachments) return;
     const allNeeded = new Set();
+    const displayNames = new Map(); // lowered filename -> original display name
     appState.rows.forEach(row => {
         const val = String(row[appState.mapping.attachments] || "").trim();
-        if (val) val.split(";").forEach(f => { const n = f.trim(); if (n) allNeeded.add(n); });
+        if (val) val.split(";").forEach(f => {
+            const n = f.trim();
+            if (n) {
+                const fileName = n.replace(/^.*[\\\/]/, "").toLowerCase();
+                allNeeded.add(fileName);
+                displayNames.set(fileName, n);
+            }
+        });
     });
     const missing = [];
-    for (const name of allNeeded) { if (!appState.perRecipientFiles.has(name.toLowerCase())) missing.push(name); }
+    for (const name of allNeeded) { if (!appState.perRecipientFiles.has(name)) missing.push(displayNames.get(name) || name); }
     const w = document.getElementById("missingAttachmentWarning");
     if (missing.length > 0) {
         w.style.display = "block"; w.style.borderColor = "#f9a825"; w.style.background = "var(--warning-light)";
@@ -864,15 +872,25 @@ function buildGraphAttachment(att) {
 
 function collectAttachmentsForRow(row) {
     const attachments = [];
+    // Add global attachments
     for (const [, att] of appState.globalAttachments) attachments.push(att);
+    // Add per-recipient attachments from spreadsheet column
     if (appState.mapping.attachments) {
         const val = String(row[appState.mapping.attachments] || "").trim();
         if (val) val.split(";").forEach(f => {
-            const name = f.trim();
-            if (!name) return;
-            const att = appState.perRecipientFiles.get(name.toLowerCase());
-            if (att) attachments.push(att);
-            else console.warn("Per-recipient attachment not found:", name);
+            const rawName = f.trim();
+            if (!rawName) return;
+            // Extract just the filename from full path (handle both / and \)
+            const fileName = rawName.replace(/^.*[\\\/]/, "").toLowerCase();
+            // Try exact match first, then filename-only match
+            let att = appState.perRecipientFiles.get(rawName.toLowerCase());
+            if (!att) att = appState.perRecipientFiles.get(fileName);
+            if (att) {
+                attachments.push(att);
+                console.log("Per-recipient attachment matched:", rawName, "->", att.name);
+            } else {
+                console.warn("Per-recipient attachment not found:", rawName, "| Tried key:", fileName, "| Available:", Array.from(appState.perRecipientFiles.keys()).join(", "));
+            }
         });
     }
     return attachments;
