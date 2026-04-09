@@ -4,6 +4,239 @@
  */
 "use strict";
 
+// ========== Internationalization (i18n) ==========
+let currentLang = localStorage.getItem("mailmergepro_language") || "en";
+const translations = {
+    en: {
+        appTitle:"📧 MailMerge-Pro", stepData:"Data", stepMap:"Map", stepCompose:"Compose", stepSend:"Send",
+        uploadTitle:"📋 Upload Recipient Data", uploadDesc:"Select an Excel (.xlsx) or CSV file with your recipients.",
+        chooseFile:"📁 Choose File", noFileSelected:"No file selected", orDivider:"— or —",
+        importContacts:"👤 Import from Contacts", savedLists:"📑 Saved Lists", saveCurrentList:"💾 Save Current List",
+        loadSavedList:"Load saved list...", deleteSavedList:"🗑️", mergeLists:"🔗 Merge Lists",
+        savedListsEmpty:"No saved lists yet.", sizeWarning:"⚠️ Data exceeds 3MB. localStorage may be full.",
+        mapTitle:"🔗 Map Columns", mapDesc:"Match your spreadsheet columns to email fields.",
+        toLabel:"To (Email)", ccLabel:"CC", bccLabel:"BCC", subjectLabel:"Subject", attachmentsLabel:"Attachments",
+        composeTitle:"✏️ Compose Email", fromLabel:"From / Send As", sharedMailboxLabel:"Shared Mailbox",
+        subjectLineLabel:"Subject Line", globalCCLabel:"Global CC", globalBCCLabel:"Global BCC",
+        emailBodyLabel:"Email Body", sendAsHtml:"Send as HTML", templatesTitle:"📝 Templates",
+        saveAsTemplate:"💾 Save as Template", loadTemplate:"Load template...", deleteTemplate:"🗑️",
+        builtInLabel:"Built-in", customLabel:"Custom", abTestTitle:"🔬 A/B Testing",
+        abTestEnable:"🔬 Enable A/B Test", versionA:"Version A", versionB:"Version B", splitRatio:"Split Ratio",
+        importHtml:"📄 Import HTML", insertSignature:"✒️ Sig", signatureTitle:"✍️ Signature",
+        autoAppendSig:"Auto-append signature", fetchSignature:"Fetch from Outlook",
+        pasteManually:"Or paste your signature below:", signatureSaved:"Signature saved!",
+        fallbackDefaults:"🔄 Fallback Default Values",
+        fallbackHint:"Used when a merge field resolves to empty for a recipient.",
+        globalAttachments:"📎 Global Attachments", perRecipientAttachments:"📎 Per-Recipient Attachments",
+        reviewTitle:"🚀 Review & Send", optionsTitle:"⚙️ Options", delayLabel:"Delay between emails (seconds)",
+        draftOnly:"📝 Save as Drafts only", readReceipt:"📬 Request read receipt",
+        highImportance:"❗ High importance", groupByEmail:"📊 Group by email (many-to-one)",
+        unsubscribe:"🚫 Add unsubscribe link", trackingTitle:"📈 Email Tracking",
+        addTracking:"Add read tracking",
+        trackingNote:"Uses Graph API read receipt. For advanced tracking (open rates, click rates), consider upgrading to a hosted version.",
+        scheduleTitle:"⏰ Scheduled Sending", scheduleSend:"📅 Schedule Send", scheduleBtn:"Schedule",
+        cancelSchedule:"Cancel Schedule",
+        scheduleWarning:"⚠️ Outlook must remain open for scheduled sends to work.",
+        schedulePast:"Scheduled time is in the past — sending immediately.",
+        scheduleSet:"Sending in", scheduleInterrupted:"Schedule was interrupted (page refreshed).",
+        rateLimitTitle:"📊 Rate Limit Dashboard", sentToday:"Emails sent today",
+        dailyLimit:"Recommended daily limit: 10,000", perMinute:"Recommended per-minute: 30",
+        suggestedDelay:"Suggested delay", sendAll:"🚀 Send All Emails", test:"🧪 Test",
+        back:"← Back", next:"Next →", prev:"◀ Prev", nextPreview:"Next ▶",
+        ctrlEnterHint:"Ctrl+Enter to send", dashboard:"📊 Dashboard",
+        dashboardTitle:"📊 Admin Dashboard", totalCampaigns:"Total Campaigns",
+        totalEmails:"Total Emails Sent", successRate:"Success Rate", avgCampaignSize:"Avg Campaign Size",
+        topRecipients:"Top Recipients", monthlyActivity:"Monthly Activity",
+        recentCampaigns:"Recent Campaigns", closeDashboard:"Close",
+        signIn:"Sign In", signOut:"Sign Out", getStarted:"Get Started",
+        welcome:"👋 Welcome to MailMerge-Pro!",
+        welcomeDesc:"Upload your spreadsheet to get started with personalized bulk email.",
+        recipients:"Recipients", columns:"columns", required:"*", optional:"(optional)",
+        none:"(none)", history:"📜 History", campaignDetails:"📜 Campaign Details",
+        close:"Close", insertLink:"Insert Link", cancel:"Cancel", insert:"Insert",
+        searchRecipients:"🔍 Search recipients...", selectContacts:"👤 Select Contacts",
+        selectAll:"Select All", useSelected:"Use Selected", addFiles:"+ Add Files",
+        uploadFiles:"+ Upload Files", templateNamePrompt:"Template Name",
+        templateNamePlaceholder:"Enter template name...", save:"Save",
+        listNamePrompt:"List Name", listNamePlaceholder:"Enter list name...",
+        mergeSelectPrompt:"Select a list to merge with current data:", merge:"Merge",
+        noRecipients:"No recipients.", enterSubject:"⚠️ Enter a subject line.",
+        enterBody:"⚠️ Enter an email body.", uploadFirst:"⚠️ Upload a data file or import contacts first.",
+        selectToColumn:"⚠️ Select the To (Email) column.", authFailed:"❌ Authentication failed",
+        sendComplete:"Mail Merge Complete", error:"Error", sent:"Sent", draft:"Draft",
+        dragDropHtml:"Drop .html file here or click Import HTML",
+        htmlImported:"HTML template imported!", scheduledFor:"Scheduled for", sending:"Sending"
+    },
+    es: {
+        appTitle:"📧 MailMerge-Pro", stepData:"Datos", stepMap:"Mapear", stepCompose:"Redactar", stepSend:"Enviar",
+        uploadTitle:"📋 Subir Datos", uploadDesc:"Seleccione un archivo Excel (.xlsx) o CSV.",
+        chooseFile:"📁 Elegir Archivo", noFileSelected:"Ningún archivo", orDivider:"— o —",
+        importContacts:"👤 Importar Contactos", savedLists:"📑 Listas Guardadas", saveCurrentList:"💾 Guardar Lista",
+        mergeLists:"🔗 Fusionar", savedListsEmpty:"Sin listas guardadas.",
+        sizeWarning:"⚠️ Datos superan 3MB.", mapTitle:"🔗 Mapear Columnas",
+        mapDesc:"Asocie las columnas a campos de correo.", toLabel:"Para (Email)",
+        composeTitle:"✏️ Redactar", subjectLineLabel:"Asunto", emailBodyLabel:"Cuerpo",
+        sendAsHtml:"Enviar como HTML", templatesTitle:"📝 Plantillas", saveAsTemplate:"💾 Guardar Plantilla",
+        abTestEnable:"🔬 Prueba A/B", versionA:"Versión A", versionB:"Versión B", splitRatio:"Proporción",
+        importHtml:"📄 Importar HTML", insertSignature:"✒️ Firma", signatureTitle:"✍️ Firma",
+        autoAppendSig:"Agregar firma auto", fetchSignature:"Obtener de Outlook",
+        pasteManually:"O pegue su firma:", signatureSaved:"¡Firma guardada!",
+        reviewTitle:"🚀 Revisar y Enviar", optionsTitle:"⚙️ Opciones",
+        delayLabel:"Retraso entre correos (seg)", draftOnly:"📝 Solo borradores",
+        readReceipt:"📬 Acuse de lectura", highImportance:"❗ Alta importancia",
+        addTracking:"Seguimiento de lectura",
+        trackingNote:"Usa acuse de lectura de Graph API. Para seguimiento avanzado, considere actualizar.",
+        scheduleTitle:"⏰ Envío Programado", scheduleBtn:"Programar", cancelSchedule:"Cancelar",
+        scheduleWarning:"⚠️ Outlook debe permanecer abierto.", scheduleSet:"Enviando en",
+        scheduleInterrupted:"Programación interrumpida.", rateLimitTitle:"📊 Límites de Envío",
+        sentToday:"Enviados hoy", dailyLimit:"Límite diario: 10,000", perMinute:"Por minuto: 30",
+        sendAll:"🚀 Enviar Todos", test:"🧪 Prueba", back:"← Atrás", next:"Siguiente →",
+        dashboard:"📊 Panel", dashboardTitle:"📊 Panel de Admin", totalCampaigns:"Campañas",
+        totalEmails:"Correos Enviados", successRate:"Tasa de Éxito", avgCampaignSize:"Tamaño Promedio",
+        topRecipients:"Top Destinatarios", monthlyActivity:"Actividad Mensual",
+        recentCampaigns:"Campañas Recientes", closeDashboard:"Cerrar", signIn:"Iniciar Sesión",
+        signOut:"Cerrar Sesión", getStarted:"Comenzar", cancel:"Cancelar", save:"Guardar",
+        merge:"Fusionar", close:"Cerrar", sent:"Enviado", draft:"Borrador", error:"Error",
+        sendComplete:"Combinación Completa", dragDropHtml:"Arrastre .html aquí",
+        htmlImported:"¡Plantilla importada!", sending:"Enviando"
+    },
+    fr: {
+        appTitle:"📧 MailMerge-Pro", stepData:"Données", stepMap:"Mapper", stepCompose:"Composer", stepSend:"Envoyer",
+        uploadTitle:"📋 Télécharger les Données", uploadDesc:"Sélectionnez un fichier Excel (.xlsx) ou CSV.",
+        chooseFile:"📁 Choisir", noFileSelected:"Aucun fichier", orDivider:"— ou —",
+        importContacts:"👤 Importer Contacts", savedLists:"📑 Listes Sauvées", saveCurrentList:"💾 Sauver Liste",
+        mergeLists:"🔗 Fusionner", savedListsEmpty:"Aucune liste sauvée.",
+        mapTitle:"🔗 Mapper Colonnes", mapDesc:"Associez les colonnes aux champs email.",
+        composeTitle:"✏️ Composer", subjectLineLabel:"Objet", emailBodyLabel:"Corps",
+        sendAsHtml:"Envoyer en HTML", templatesTitle:"📝 Modèles", saveAsTemplate:"💾 Sauver Modèle",
+        abTestEnable:"🔬 Test A/B", versionA:"Version A", versionB:"Version B", splitRatio:"Ratio",
+        importHtml:"📄 Importer HTML", insertSignature:"✒️ Sig.", signatureTitle:"✍️ Signature",
+        autoAppendSig:"Ajouter signature auto", fetchSignature:"Récupérer d'Outlook",
+        pasteManually:"Ou collez votre signature:", signatureSaved:"Signature sauvée!",
+        reviewTitle:"🚀 Vérifier et Envoyer", optionsTitle:"⚙️ Options",
+        delayLabel:"Délai entre emails (sec)", draftOnly:"📝 Brouillons seulement",
+        readReceipt:"📬 Accusé de réception", highImportance:"❗ Haute importance",
+        addTracking:"Suivi de lecture", scheduleTitle:"⏰ Envoi Programmé",
+        scheduleBtn:"Programmer", cancelSchedule:"Annuler",
+        scheduleWarning:"⚠️ Outlook doit rester ouvert.", scheduleSet:"Envoi dans",
+        rateLimitTitle:"📊 Limites d'envoi", sentToday:"Envoyés aujourd'hui",
+        sendAll:"🚀 Envoyer Tout", test:"🧪 Test", back:"← Retour", next:"Suivant →",
+        dashboard:"📊 Tableau", dashboardTitle:"📊 Tableau de Bord", totalCampaigns:"Campagnes",
+        totalEmails:"Emails Envoyés", successRate:"Taux de Réussite", avgCampaignSize:"Taille Moyenne",
+        topRecipients:"Top Destinataires", recentCampaigns:"Campagnes Récentes",
+        closeDashboard:"Fermer", signIn:"Connexion", signOut:"Déconnexion",
+        getStarted:"Commencer", cancel:"Annuler", save:"Sauver", merge:"Fusionner",
+        close:"Fermer", sent:"Envoyé", draft:"Brouillon", error:"Erreur",
+        sendComplete:"Fusion Terminée", sending:"Envoi"
+    },
+    de: {
+        appTitle:"📧 MailMerge-Pro", stepData:"Daten", stepMap:"Zuordnen", stepCompose:"Verfassen", stepSend:"Senden",
+        uploadTitle:"📋 Daten Hochladen", uploadDesc:"Wählen Sie eine Excel- (.xlsx) oder CSV-Datei.",
+        chooseFile:"📁 Datei Wählen", noFileSelected:"Keine Datei", orDivider:"— oder —",
+        importContacts:"👤 Kontakte Importieren", savedLists:"📑 Gespeicherte Listen",
+        saveCurrentList:"💾 Liste Speichern", mergeLists:"🔗 Zusammenführen",
+        savedListsEmpty:"Keine Listen gespeichert.", mapTitle:"🔗 Spalten Zuordnen",
+        composeTitle:"✏️ Verfassen", subjectLineLabel:"Betreff", emailBodyLabel:"Inhalt",
+        sendAsHtml:"Als HTML senden", templatesTitle:"📝 Vorlagen", saveAsTemplate:"💾 Vorlage Speichern",
+        abTestEnable:"🔬 A/B-Test", versionA:"Version A", versionB:"Version B", splitRatio:"Aufteilung",
+        importHtml:"📄 HTML Importieren", insertSignature:"✒️ Sig.", signatureTitle:"✍️ Signatur",
+        autoAppendSig:"Signatur automatisch anhängen", fetchSignature:"Von Outlook abrufen",
+        pasteManually:"Oder fügen Sie Ihre Signatur ein:", signatureSaved:"Signatur gespeichert!",
+        reviewTitle:"🚀 Prüfen & Senden", optionsTitle:"⚙️ Optionen",
+        delayLabel:"Verzögerung zwischen E-Mails (Sek.)", draftOnly:"📝 Nur Entwürfe",
+        readReceipt:"📬 Lesebestätigung", highImportance:"❗ Hohe Priorität",
+        addTracking:"Lesebestätigung aktivieren", scheduleTitle:"⏰ Zeitgesteuert Senden",
+        scheduleBtn:"Planen", cancelSchedule:"Abbrechen",
+        scheduleWarning:"⚠️ Outlook muss geöffnet bleiben.", scheduleSet:"Senden in",
+        rateLimitTitle:"📊 Sendebeschränkungen", sentToday:"Heute gesendet",
+        sendAll:"🚀 Alle Senden", test:"🧪 Test", back:"← Zurück", next:"Weiter →",
+        dashboard:"📊 Dashboard", dashboardTitle:"📊 Admin-Dashboard", totalCampaigns:"Kampagnen",
+        totalEmails:"Gesendete E-Mails", successRate:"Erfolgsrate", avgCampaignSize:"Durchschnittsgröße",
+        topRecipients:"Top-Empfänger", recentCampaigns:"Letzte Kampagnen",
+        closeDashboard:"Schließen", signIn:"Anmelden", signOut:"Abmelden",
+        getStarted:"Loslegen", cancel:"Abbrechen", save:"Speichern", merge:"Zusammenführen",
+        close:"Schließen", sent:"Gesendet", draft:"Entwurf", error:"Fehler",
+        sendComplete:"Zusammenführung Abgeschlossen", sending:"Senden"
+    },
+    pt: {
+        appTitle:"📧 MailMerge-Pro", stepData:"Dados", stepMap:"Mapear", stepCompose:"Compor", stepSend:"Enviar",
+        uploadTitle:"📋 Carregar Dados", uploadDesc:"Selecione um arquivo Excel (.xlsx) ou CSV.",
+        chooseFile:"📁 Escolher", noFileSelected:"Nenhum arquivo", orDivider:"— ou —",
+        importContacts:"👤 Importar Contatos", savedLists:"📑 Listas Salvas",
+        saveCurrentList:"💾 Salvar Lista", mergeLists:"🔗 Mesclar",
+        savedListsEmpty:"Nenhuma lista salva.", mapTitle:"🔗 Mapear Colunas",
+        composeTitle:"✏️ Compor", subjectLineLabel:"Assunto", emailBodyLabel:"Corpo",
+        sendAsHtml:"Enviar como HTML", templatesTitle:"📝 Modelos", saveAsTemplate:"💾 Salvar Modelo",
+        abTestEnable:"🔬 Teste A/B", versionA:"Versão A", versionB:"Versão B", splitRatio:"Proporção",
+        importHtml:"📄 Importar HTML", insertSignature:"✒️ Assin.", signatureTitle:"✍️ Assinatura",
+        autoAppendSig:"Adicionar assinatura auto", fetchSignature:"Buscar do Outlook",
+        pasteManually:"Ou cole sua assinatura:", signatureSaved:"Assinatura salva!",
+        reviewTitle:"🚀 Revisar e Enviar", optionsTitle:"⚙️ Opções",
+        delayLabel:"Atraso entre emails (seg)", draftOnly:"📝 Apenas rascunhos",
+        readReceipt:"📬 Confirmação de leitura", highImportance:"❗ Alta importância",
+        addTracking:"Rastreamento de leitura", scheduleTitle:"⏰ Envio Agendado",
+        scheduleBtn:"Agendar", cancelSchedule:"Cancelar",
+        scheduleWarning:"⚠️ Outlook deve permanecer aberto.", scheduleSet:"Enviando em",
+        rateLimitTitle:"📊 Limites de Envio", sentToday:"Enviados hoje",
+        sendAll:"🚀 Enviar Todos", test:"🧪 Teste", back:"← Voltar", next:"Próximo →",
+        dashboard:"📊 Painel", dashboardTitle:"📊 Painel Admin", totalCampaigns:"Campanhas",
+        totalEmails:"Emails Enviados", successRate:"Taxa de Sucesso", avgCampaignSize:"Tamanho Médio",
+        topRecipients:"Top Destinatários", recentCampaigns:"Campanhas Recentes",
+        closeDashboard:"Fechar", signIn:"Entrar", signOut:"Sair",
+        getStarted:"Começar", cancel:"Cancelar", save:"Salvar", merge:"Mesclar",
+        close:"Fechar", sent:"Enviado", draft:"Rascunho", error:"Erro",
+        sendComplete:"Mesclagem Concluída", sending:"Enviando"
+    },
+    ja: {
+        appTitle:"📧 MailMerge-Pro", stepData:"データ", stepMap:"マップ", stepCompose:"作成", stepSend:"送信",
+        uploadTitle:"📋 データアップロード", uploadDesc:"Excel (.xlsx) または CSV ファイルを選択してください。",
+        chooseFile:"📁 ファイル選択", noFileSelected:"未選択", orDivider:"— または —",
+        importContacts:"👤 連絡先インポート", savedLists:"📑 保存リスト",
+        saveCurrentList:"💾 リスト保存", mergeLists:"🔗 結合",
+        savedListsEmpty:"保存されたリストはありません。", mapTitle:"🔗 列マッピング",
+        composeTitle:"✏️ メール作成", subjectLineLabel:"件名", emailBodyLabel:"本文",
+        sendAsHtml:"HTMLで送信", templatesTitle:"📝 テンプレート", saveAsTemplate:"💾 テンプレート保存",
+        abTestEnable:"🔬 A/Bテスト", versionA:"バージョンA", versionB:"バージョンB", splitRatio:"分割比率",
+        importHtml:"📄 HTMLインポート", insertSignature:"✒️ 署名", signatureTitle:"✍️ 署名",
+        autoAppendSig:"署名を自動追加", fetchSignature:"Outlookから取得",
+        pasteManually:"または署名を貼り付け:", signatureSaved:"署名を保存しました！",
+        reviewTitle:"🚀 確認＆送信", optionsTitle:"⚙️ オプション",
+        delayLabel:"メール間の遅延（秒）", draftOnly:"📝 下書きのみ",
+        readReceipt:"📬 開封確認", highImportance:"❗ 高重要度",
+        addTracking:"開封トラッキング", scheduleTitle:"⏰ 予約送信",
+        scheduleBtn:"予約", cancelSchedule:"キャンセル",
+        scheduleWarning:"⚠️ 予約送信にはOutlookを開いたままにしてください。", scheduleSet:"送信まで",
+        rateLimitTitle:"📊 送信制限", sentToday:"本日の送信数",
+        sendAll:"🚀 全て送信", test:"🧪 テスト", back:"← 戻る", next:"次へ →",
+        dashboard:"📊 ダッシュボード", dashboardTitle:"📊 管理ダッシュボード",
+        totalCampaigns:"キャンペーン数", totalEmails:"送信メール数",
+        successRate:"成功率", avgCampaignSize:"平均サイズ",
+        topRecipients:"トップ受信者", recentCampaigns:"最近のキャンペーン",
+        closeDashboard:"閉じる", signIn:"サインイン", signOut:"サインアウト",
+        getStarted:"始める", cancel:"キャンセル", save:"保存", merge:"結合",
+        close:"閉じる", sent:"送信済", draft:"下書き", error:"エラー",
+        sendComplete:"メール結合完了", sending:"送信中"
+    }
+};
+
+function t(key) {
+    return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+}
+
+function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem("mailmergepro_language", lang);
+    applyTranslations();
+}
+
+function applyTranslations() {
+    document.querySelectorAll("[data-i18n]").forEach(function(el) {
+        var key = el.getAttribute("data-i18n");
+        var val = t(key);
+        if (val) el.textContent = val;
+    });
+}
+
 // ========== MSAL Configuration ==========
 const msalConfig = {
     auth: {
@@ -30,7 +263,14 @@ const appState = {
     sending: false,
     userEmail: "",
     previewIndex: 0,
-    contactsData: []
+    contactsData: [],
+    abTestEnabled: false,
+    abVersion: "A",
+    scheduledTimer: null,
+    scheduledTime: null,
+    scheduleCountdownInterval: null,
+    signatureHtml: localStorage.getItem("mailmergepro_signature") || "",
+    autoSignature: localStorage.getItem("mailmergepro_autosignature") === "true"
 };
 
 // ========== Office.js Initialization ==========
@@ -258,6 +498,82 @@ function initUI() {
             executeMerge(false);
         }
     });
+
+    // ===== New Feature Event Listeners =====
+
+    // Feature 9: Language selector
+    const langSel = document.getElementById("languageSelect");
+    if (langSel) {
+        langSel.value = currentLang;
+        langSel.addEventListener("change", (e) => setLanguage(e.target.value));
+    }
+
+    // Feature 10: Dashboard
+    document.getElementById("btnDashboard").addEventListener("click", openDashboard);
+    document.getElementById("btnCloseDashboard").addEventListener("click", closeDashboard);
+
+    // Feature 1: Templates
+    document.getElementById("templatesHeader").addEventListener("click", () => toggleCollapsible("templatesHeader", "templatesBody"));
+    document.getElementById("btnSaveTemplate").addEventListener("click", showSaveTemplateDialog);
+    document.getElementById("btnTemplateNameCancel").addEventListener("click", () => { document.getElementById("templateNameDialog").style.display = "none"; });
+    document.getElementById("btnTemplateNameSave").addEventListener("click", saveCurrentTemplate);
+    document.getElementById("templateNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveCurrentTemplate(); });
+    loadTemplatesUI();
+
+    // Feature 5: Contact Groups / Saved Lists
+    document.getElementById("savedListsHeader").addEventListener("click", () => toggleCollapsible("savedListsHeader", "savedListsBody"));
+    document.getElementById("btnSaveCurrentList").addEventListener("click", showSaveListDialog);
+    document.getElementById("btnMergeLists").addEventListener("click", showMergeListDialog);
+    document.getElementById("btnListNameCancel").addEventListener("click", () => { document.getElementById("listNameDialog").style.display = "none"; });
+    document.getElementById("btnListNameSave").addEventListener("click", saveCurrentList);
+    document.getElementById("listNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveCurrentList(); });
+    document.getElementById("btnMergeListCancel").addEventListener("click", () => { document.getElementById("mergeListDialog").style.display = "none"; });
+    document.getElementById("btnMergeListConfirm").addEventListener("click", mergeSelectedList);
+    loadSavedListsUI();
+
+    // Feature 4: A/B Testing
+    document.getElementById("chkABTest").addEventListener("change", toggleABTest);
+    document.querySelectorAll(".ab-tab").forEach(tab => {
+        tab.addEventListener("click", () => switchABTab(tab.dataset.ab));
+    });
+
+    // Feature 6: HTML Import
+    document.getElementById("htmlImportHeader").addEventListener("click", () => toggleCollapsible("htmlImportHeader", "htmlImportBody"));
+    document.getElementById("htmlFileInput").addEventListener("change", handleHtmlImport);
+    initHtmlDragDrop();
+
+    // Feature 7: Signature
+    document.getElementById("signatureHeader").addEventListener("click", () => toggleCollapsible("signatureHeader", "signatureBody"));
+    document.getElementById("btnInsertSignature").addEventListener("click", showSignatureDialog);
+    document.getElementById("btnManageSignature").addEventListener("click", showSignatureDialog);
+    document.getElementById("btnFetchSignature").addEventListener("click", fetchOutlookSignature);
+    document.getElementById("btnSignatureCancel").addEventListener("click", () => { document.getElementById("signatureDialog").style.display = "none"; });
+    document.getElementById("btnSignatureSave").addEventListener("click", saveSignature);
+    document.getElementById("chkAutoSignatureInline").checked = appState.autoSignature;
+    document.getElementById("chkAutoSignatureInline").addEventListener("change", (e) => {
+        appState.autoSignature = e.target.checked;
+        localStorage.setItem("mailmergepro_autosignature", e.target.checked ? "true" : "false");
+    });
+    loadSignaturePreview();
+
+    // Feature 3: Email Tracking
+    document.getElementById("chkTracking").addEventListener("change", (e) => {
+        document.getElementById("trackingNote").style.display = e.target.checked ? "block" : "none";
+        if (e.target.checked) document.getElementById("chkReadReceipt").checked = true;
+    });
+
+    // Feature 2: Scheduled Sending
+    document.getElementById("scheduleHeader").addEventListener("click", () => toggleCollapsible("scheduleHeader", "scheduleBody"));
+    document.getElementById("btnScheduleSend").addEventListener("click", scheduleSend);
+    document.getElementById("btnCancelSchedule").addEventListener("click", cancelScheduledSend);
+    checkInterruptedSchedule();
+
+    // Feature 8: Rate Limit
+    document.getElementById("rateLimitHeader").addEventListener("click", () => toggleCollapsible("rateLimitHeader", "rateLimitBody"));
+    updateRateLimitDisplay();
+
+    // Apply i18n
+    applyTranslations();
 }
 
 // ========== Rich Text Editor ==========
@@ -335,11 +651,21 @@ function loadCampaignHistory() {
         sel.appendChild(opt);
     });
 }
-function saveCampaign(name, total, sent, errors) {
+function saveCampaign(name, total, sent, errors, extra) {
     const stored = localStorage.getItem("mailmerge-pro-campaigns");
     const campaigns = stored ? JSON.parse(stored) : [];
-    campaigns.unshift({ name: name || "Untitled", date: new Date().toLocaleDateString(), total: total, sent: sent, errors: errors });
-    if (campaigns.length > 20) campaigns.length = 20;
+    const record = {
+        name: name || "Untitled",
+        date: new Date().toLocaleDateString(),
+        dateISO: new Date().toISOString(),
+        total: total,
+        sent: sent,
+        errors: errors,
+        recipients: (extra && extra.recipients) ? extra.recipients : [],
+        abTest: (extra && extra.abTest) ? extra.abTest : null
+    };
+    campaigns.unshift(record);
+    if (campaigns.length > 50) campaigns.length = 50;
     localStorage.setItem("mailmerge-pro-campaigns", JSON.stringify(campaigns));
     loadCampaignHistory();
 }
@@ -436,6 +762,8 @@ function handleFileUpload(e) {
             appState.rows = jsonData;
             renderDataPreview();
             document.getElementById("btnStep1Next").disabled = false;
+            document.getElementById("btnSaveCurrentList").disabled = false;
+            document.getElementById("btnMergeLists").disabled = false;
             updateStepBadge(1, String(appState.rows.length));
             console.log("Parsed", appState.rows.length, "rows,", appState.headers.length, "columns");
         } catch (err) {
@@ -525,6 +853,8 @@ function useSelectedContacts() {
     document.getElementById("contactsPanel").style.display = "none";
     renderDataPreview();
     document.getElementById("btnStep1Next").disabled = false;
+    document.getElementById("btnSaveCurrentList").disabled = false;
+    document.getElementById("btnMergeLists").disabled = false;
     updateStepBadge(1, String(rows.length));
 }
 
@@ -711,7 +1041,17 @@ function buildReview() {
     html += "<p><strong>Subject:</strong> " + escapeHtml(subject) + "</p>";
     if (appState.globalAttachments.size > 0) html += "<p><strong>Global attachments:</strong> " + appState.globalAttachments.size + " file(s)</p>";
     if (appState.mapping.attachments) html += "<p><strong>Per-recipient attachment column:</strong> " + escapeHtml(appState.mapping.attachments) + "</p>";
+    // A/B Test info
+    if (appState.abTestEnabled) {
+        const ratio = parseInt(document.getElementById("abSplitRatio").value) || 50;
+        const groupA = Math.ceil(recipientCount * ratio / 100);
+        const groupB = recipientCount - groupA;
+        html += '<p style="color:var(--primary);font-weight:600;">🔬 A/B Test: Group A: ' + groupA + ' recipients, Group B: ' + groupB + ' recipients (' + ratio + '/' + (100-ratio) + ')</p>';
+    }
     document.getElementById("reviewSummary").innerHTML = html;
+    // Update rate limit display when entering Step 4
+    updateRateLimitDisplay();
+    suggestDelay(recipientCount);
 }
 
 function changePreview(delta) {
@@ -946,7 +1286,23 @@ async function executeMerge(testMode) {
 
         const opts = { readReceipt: readReceipt, highImportance: highImportance, unsubscribeEmail: unsubscribeEmail, sharedMailbox: sharedMailbox };
 
-        const body = sendAsHtml ? bodyContent : plainBody;
+        // Auto-append signature if enabled
+        let signatureBlock = "";
+        if (appState.autoSignature && appState.signatureHtml) {
+            signatureBlock = sendAsHtml
+                ? '<br/><div class="email-signature">' + appState.signatureHtml + '</div>'
+                : "\n\n" + appState.signatureHtml;
+        }
+
+        // A/B test config
+        const abEnabled = document.getElementById("chkABTest").checked;
+        const abRatio = abEnabled ? (parseInt(document.getElementById("abSplitRatio").value) || 50) : 100;
+        const subjectB = abEnabled ? document.getElementById("emailSubjectB").value : "";
+        const bodyBEditor = document.getElementById("emailBodyB");
+        const bodyBHtml = abEnabled ? bodyBEditor.innerHTML : "";
+        const bodyBPlain = abEnabled ? bodyBEditor.innerText : "";
+
+        const body = sendAsHtml ? bodyContent + signatureBlock : plainBody + signatureBlock;
         if (!subject && !appState.mapping.subject) { showStatus("\u26A0\uFE0F Enter a subject line.", "warning"); return; }
         if (!body) { showStatus("\u26A0\uFE0F Enter an email body.", "warning"); return; }
 
@@ -1004,7 +1360,7 @@ async function executeMerge(testMode) {
             updateProgress(0, 1, modeLabel + ": sending to " + testTo + "...");
             const row = appState.rows[0];
             const mSubj = appState.mapping.subject ? mergeFields(String(row[appState.mapping.subject] || subject), row) : mergeFields(subject, row);
-            const mBody = sendAsHtml ? mergeFields(bodyContent, row) : mergeFields(plainBody, row);
+            const mBody = sendAsHtml ? mergeFields(bodyContent + signatureBlock, row) : mergeFields(plainBody + signatureBlock, row);
             let ccL = ""; if (appState.mapping.cc && row[appState.mapping.cc]) ccL = String(row[appState.mapping.cc]);
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
@@ -1025,6 +1381,8 @@ async function executeMerge(testMode) {
         // ===== Bulk send =====
         appState.results = [];
         let sent = 0, errors = 0;
+        let abSentA = 0, abSentB = 0, abErrA = 0, abErrB = 0;
+        const recipientEmails = [];
         for (let i = 0; i < total; i++) {
             const item = sendItems[i];
             const toAddr = item.to;
@@ -1033,14 +1391,25 @@ async function executeMerge(testMode) {
                 appState.results.push({ row: i + 2, to: "(empty)", status: "Error", error: "No email address" });
                 continue;
             }
+            recipientEmails.push(toAddr);
+            // A/B split: deterministic by index
+            const isGroupB = abEnabled && (i >= Math.ceil(total * abRatio / 100));
+            const useSubjectB = isGroupB && subjectB;
+            const useBodyB = isGroupB && (bodyBHtml || bodyBPlain);
+
+            const activeSubject = useSubjectB ? subjectB : subject;
+            const activeBodyHtml = useBodyB ? bodyBHtml + signatureBlock : bodyContent + signatureBlock;
+            const activeBodyPlain = useBodyB ? bodyBPlain + signatureBlock : plainBody + signatureBlock;
+            const activeBody = sendAsHtml ? activeBodyHtml : activeBodyPlain;
+
             const row = item.rows[0];
             const isGroup = item.rows.length > 1;
             const mSubj = appState.mapping.subject
-                ? (isGroup ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || subject), item.rows) : mergeFields(String(row[appState.mapping.subject] || subject), row))
-                : (isGroup ? mergeFieldsWithGroup(subject, item.rows) : mergeFields(subject, row));
+                ? (isGroup ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || activeSubject), item.rows) : mergeFields(String(row[appState.mapping.subject] || activeSubject), row))
+                : (isGroup ? mergeFieldsWithGroup(activeSubject, item.rows) : mergeFields(activeSubject, row));
             const mBody = isGroup
-                ? (sendAsHtml ? mergeFieldsWithGroup(bodyContent, item.rows) : mergeFieldsWithGroup(plainBody, item.rows))
-                : (sendAsHtml ? mergeFields(bodyContent, row) : mergeFields(plainBody, row));
+                ? (sendAsHtml ? mergeFieldsWithGroup(activeBodyHtml, item.rows) : mergeFieldsWithGroup(activeBodyPlain, item.rows))
+                : (sendAsHtml ? mergeFields(activeBodyHtml, row) : mergeFields(activeBodyPlain, row));
             let ccL = ""; if (appState.mapping.cc && row[appState.mapping.cc]) ccL = String(row[appState.mapping.cc]);
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
@@ -1050,7 +1419,8 @@ async function executeMerge(testMode) {
             try {
                 await sendOneEmail(token, toAddr, ccL, bccL, mSubj, mBody, sendAsHtml, fromAlias, atts, draftOnly, opts);
                 sent++;
-                appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
+                if (isGroupB) abSentB++; else abSentA++;
+                appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent", abGroup: isGroupB ? "B" : "A" });
             } catch (err) {
                 const errMsg = err.message || String(err);
                 if (errMsg.startsWith("THROTTLED:")) {
@@ -1062,11 +1432,13 @@ async function executeMerge(testMode) {
                     try {
                         await sendOneEmail(token, toAddr, ccL, bccL, mSubj, mBody, sendAsHtml, fromAlias, atts, draftOnly, opts);
                         sent++;
-                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
+                        if (isGroupB) abSentB++; else abSentA++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent", abGroup: isGroupB ? "B" : "A" });
                         continue;
                     } catch (retryErr) {
                         errors++;
-                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr) });
+                        if (isGroupB) abErrB++; else abErrA++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr), abGroup: isGroupB ? "B" : "A" });
                     }
                 } else if (errMsg.startsWith("SESSION_EXPIRED:")) {
                     console.warn("Token expired, re-acquiring...");
@@ -1074,15 +1446,18 @@ async function executeMerge(testMode) {
                         token = await getGraphToken();
                         await sendOneEmail(token, toAddr, ccL, bccL, mSubj, mBody, sendAsHtml, fromAlias, atts, draftOnly, opts);
                         sent++;
-                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent" });
+                        if (isGroupB) abSentB++; else abSentA++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent", abGroup: isGroupB ? "B" : "A" });
                         continue;
                     } catch (retryErr) {
                         errors++;
-                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr) });
+                        if (isGroupB) abErrB++; else abErrA++;
+                        appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: retryErr.message || String(retryErr), abGroup: isGroupB ? "B" : "A" });
                     }
                 } else {
                     errors++;
-                    appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: errMsg });
+                    if (isGroupB) abErrB++; else abErrA++;
+                    appState.results.push({ row: i + 2, to: toAddr, status: "Error", error: errMsg, abGroup: isGroupB ? "B" : "A" });
                     console.error("Error sending to " + toAddr + ":", err);
                 }
             }
@@ -1095,9 +1470,17 @@ async function executeMerge(testMode) {
         sendBtn.classList.add("complete");
         setTimeout(() => sendBtn.classList.remove("complete"), 3000);
         showResultsTable(total, sent, errors, draftOnly);
-        // Save campaign
+        // Show A/B results if enabled
+        if (abEnabled) {
+            showABResults(abSentA, abErrA, abSentB, abErrB);
+        }
+        // Update rate limit counter
+        updateDailySentCount(sent);
+        updateRateLimitDisplay();
+        // Save campaign with extra data
         const campName = document.getElementById("campaignName").value.trim();
-        saveCampaign(campName, total, sent, errors);
+        const abData = abEnabled ? { sentA: abSentA, errA: abErrA, sentB: abSentB, errB: abErrB, ratio: abRatio } : null;
+        saveCampaign(campName, total, sent, errors, { recipients: recipientEmails, abTest: abData });
 
     } catch (outerErr) {
         console.error("executeMerge error:", outerErr);
@@ -1188,4 +1571,652 @@ function readFileAsBase64(file) {
         reader.onerror = function() { reject(new Error("Failed to read: " + file.name)); };
         reader.readAsDataURL(file);
     });
+}
+
+// ========== Collapsible Sections ==========
+function toggleCollapsible(headerId, bodyId) {
+    var header = document.getElementById(headerId);
+    var body = document.getElementById(bodyId);
+    if (!header || !body) return;
+    var isOpen = body.classList.contains("open");
+    if (isOpen) {
+        body.classList.remove("open");
+        header.classList.remove("open");
+    } else {
+        body.classList.add("open");
+        header.classList.add("open");
+    }
+}
+
+// ========== Feature 1: Email Templates Library ==========
+function getBuiltInTemplates() {
+    return [
+        {
+            name: "Welcome Email",
+            subject: "Welcome {FirstName}!",
+            body: '<h2 style="color:#0078d4;">Welcome aboard, {FirstName}!</h2>' +
+                '<p>We\'re thrilled to have you join us. Here\'s what you can expect:</p>' +
+                '<ul><li>Personalized onboarding experience</li><li>Access to our full suite of tools</li><li>Dedicated support team ready to help</li></ul>' +
+                '<p>If you have any questions, don\'t hesitate to reach out.</p>' +
+                '<p>Best regards,<br/>The Team</p>',
+            createdAt: "built-in",
+            builtIn: true
+        },
+        {
+            name: "Product Update",
+            subject: "New updates from our team",
+            body: '<h2 style="color:#0078d4;">What\'s New This Month</h2>' +
+                '<p>Hi {FirstName},</p>' +
+                '<p>We\'ve been hard at work improving our product. Here are the highlights:</p>' +
+                '<ul><li><strong>Feature 1:</strong> Improved performance across the board</li>' +
+                '<li><strong>Feature 2:</strong> New dashboard with real-time analytics</li>' +
+                '<li><strong>Feature 3:</strong> Enhanced security and compliance</li></ul>' +
+                '<p>Update now to take advantage of these improvements!</p>' +
+                '<p>— The Product Team</p>',
+            createdAt: "built-in",
+            builtIn: true
+        },
+        {
+            name: "Invoice/Statement",
+            subject: "Your statement for {Month}",
+            body: '<h2 style="color:#0078d4;">Monthly Statement</h2>' +
+                '<p>Dear {FirstName},</p>' +
+                '<p>Please find below your statement for the current billing period.</p>' +
+                '<table style="border-collapse:collapse;width:100%;margin:16px 0;">' +
+                '<tr style="background:#f5f5f5;"><td style="padding:8px;border:1px solid #ddd;"><strong>Account</strong></td><td style="padding:8px;border:1px solid #ddd;">{Email}</td></tr>' +
+                '<tr><td style="padding:8px;border:1px solid #ddd;"><strong>Period</strong></td><td style="padding:8px;border:1px solid #ddd;">{Month}</td></tr>' +
+                '</table>' +
+                '<p>If you have questions about this statement, please contact our billing team.</p>' +
+                '<p>Thank you for your business!</p>',
+            createdAt: "built-in",
+            builtIn: true
+        }
+    ];
+}
+
+function getSavedTemplates() {
+    var stored = localStorage.getItem("mailmergepro_templates");
+    return stored ? JSON.parse(stored) : [];
+}
+
+function saveTemplatesStorage(templates) {
+    localStorage.setItem("mailmergepro_templates", JSON.stringify(templates));
+}
+
+function loadTemplatesUI() {
+    var container = document.getElementById("templateCards");
+    if (!container) return;
+    container.innerHTML = "";
+    var builtIn = getBuiltInTemplates();
+    var custom = getSavedTemplates();
+    var all = builtIn.concat(custom);
+    if (all.length === 0) {
+        container.innerHTML = '<p class="hint">No templates available.</p>';
+        return;
+    }
+    all.forEach(function(tmpl, idx) {
+        var card = document.createElement("div");
+        card.className = "template-card";
+        var info = document.createElement("div");
+        info.className = "template-card-info";
+        info.innerHTML = '<div class="template-card-name">' + escapeHtml(tmpl.name) + '</div>' +
+            '<div class="template-card-meta">' + escapeHtml(tmpl.subject || "") + '</div>';
+        card.appendChild(info);
+        var badge = document.createElement("span");
+        badge.className = "template-card-badge";
+        badge.textContent = tmpl.builtIn ? t("builtInLabel") : t("customLabel");
+        card.appendChild(badge);
+        if (!tmpl.builtIn) {
+            var del = document.createElement("button");
+            del.className = "btn-icon";
+            del.title = "Delete";
+            del.innerHTML = "&times;";
+            del.addEventListener("click", function(e) {
+                e.stopPropagation();
+                deleteTemplate(idx - builtIn.length);
+            });
+            card.appendChild(del);
+        }
+        card.addEventListener("click", function() { loadTemplate(tmpl); });
+        container.appendChild(card);
+    });
+}
+
+function loadTemplate(tmpl) {
+    document.getElementById("emailSubject").value = tmpl.subject || "";
+    var editor = document.getElementById("emailBody");
+    editor.innerHTML = tmpl.body || "";
+    editor.classList.remove("is-empty");
+}
+
+function showSaveTemplateDialog() {
+    document.getElementById("templateNameInput").value = "";
+    document.getElementById("templateNameDialog").style.display = "flex";
+    document.getElementById("templateNameInput").focus();
+}
+
+function saveCurrentTemplate() {
+    var name = document.getElementById("templateNameInput").value.trim();
+    if (!name) return;
+    var templates = getSavedTemplates();
+    templates.push({
+        name: name,
+        subject: document.getElementById("emailSubject").value,
+        body: getEditorContent(),
+        createdAt: new Date().toISOString(),
+        builtIn: false
+    });
+    saveTemplatesStorage(templates);
+    document.getElementById("templateNameDialog").style.display = "none";
+    loadTemplatesUI();
+}
+
+function deleteTemplate(customIdx) {
+    var templates = getSavedTemplates();
+    if (customIdx >= 0 && customIdx < templates.length) {
+        templates.splice(customIdx, 1);
+        saveTemplatesStorage(templates);
+        loadTemplatesUI();
+    }
+}
+
+// ========== Feature 2: Scheduled Sending ==========
+function scheduleSend() {
+    var dtInput = document.getElementById("scheduleDateTime");
+    if (!dtInput.value) return;
+    var scheduledDate = new Date(dtInput.value);
+    var now = new Date();
+    var diff = scheduledDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+        showStatus(t("schedulePast"), "warning");
+        executeMerge(false);
+        return;
+    }
+
+    appState.scheduledTime = scheduledDate;
+    // Store in localStorage for interrupted detection
+    localStorage.setItem("mailmergepro_scheduled", JSON.stringify({
+        time: scheduledDate.toISOString(),
+        campaign: document.getElementById("campaignName").value || "Untitled"
+    }));
+
+    appState.scheduledTimer = setTimeout(function() {
+        localStorage.removeItem("mailmergepro_scheduled");
+        clearScheduleUI();
+        executeMerge(false);
+    }, diff);
+
+    document.getElementById("btnScheduleSend").style.display = "none";
+    document.getElementById("btnCancelSchedule").style.display = "inline-block";
+    document.getElementById("scheduleCountdown").style.display = "block";
+    document.getElementById("scheduleInterruptedMsg").style.display = "none";
+
+    // Countdown timer
+    updateScheduleCountdown();
+    appState.scheduleCountdownInterval = setInterval(updateScheduleCountdown, 1000);
+}
+
+function updateScheduleCountdown() {
+    if (!appState.scheduledTime) return;
+    var now = new Date();
+    var diff = appState.scheduledTime.getTime() - now.getTime();
+    if (diff <= 0) {
+        document.getElementById("scheduleCountdown").textContent = t("sending") + "...";
+        return;
+    }
+    var hours = Math.floor(diff / 3600000);
+    var minutes = Math.floor((diff % 3600000) / 60000);
+    var seconds = Math.floor((diff % 60000) / 1000);
+    var text = t("scheduleSet") + " ";
+    if (hours > 0) text += hours + "h ";
+    if (minutes > 0) text += minutes + "m ";
+    text += seconds + "s";
+    document.getElementById("scheduleCountdown").textContent = text;
+}
+
+function cancelScheduledSend() {
+    if (appState.scheduledTimer) {
+        clearTimeout(appState.scheduledTimer);
+        appState.scheduledTimer = null;
+    }
+    if (appState.scheduleCountdownInterval) {
+        clearInterval(appState.scheduleCountdownInterval);
+        appState.scheduleCountdownInterval = null;
+    }
+    appState.scheduledTime = null;
+    localStorage.removeItem("mailmergepro_scheduled");
+    clearScheduleUI();
+}
+
+function clearScheduleUI() {
+    document.getElementById("btnScheduleSend").style.display = "inline-block";
+    document.getElementById("btnCancelSchedule").style.display = "none";
+    document.getElementById("scheduleCountdown").style.display = "none";
+}
+
+function checkInterruptedSchedule() {
+    var stored = localStorage.getItem("mailmergepro_scheduled");
+    if (!stored) return;
+    try {
+        var data = JSON.parse(stored);
+        var scheduledTime = new Date(data.time);
+        if (scheduledTime.getTime() < Date.now()) {
+            document.getElementById("scheduleInterruptedMsg").style.display = "block";
+            localStorage.removeItem("mailmergepro_scheduled");
+        } else {
+            localStorage.removeItem("mailmergepro_scheduled");
+        }
+    } catch(e) {
+        localStorage.removeItem("mailmergepro_scheduled");
+    }
+}
+
+// ========== Feature 3: Email Tracking ==========
+// Tracking is primarily handled via the existing readReceipt checkbox.
+// The chkTracking checkbox auto-enables readReceipt (see initUI listener).
+
+// ========== Feature 4: A/B Testing ==========
+function toggleABTest() {
+    var enabled = document.getElementById("chkABTest").checked;
+    appState.abTestEnabled = enabled;
+    document.getElementById("abTestPanel").style.display = enabled ? "block" : "none";
+    document.getElementById("emailBodyBContainer").style.display = enabled ? "block" : "none";
+    document.getElementById("abEditorLabel").style.display = enabled ? "inline" : "none";
+    if (enabled) switchABTab("A");
+}
+
+function switchABTab(version) {
+    appState.abVersion = version;
+    document.querySelectorAll(".ab-tab").forEach(function(tab) {
+        tab.classList.toggle("active", tab.dataset.ab === version);
+    });
+    document.getElementById("abVersionB").style.display = version === "B" ? "block" : "none";
+}
+
+function showABResults(sentA, errA, sentB, errB) {
+    var el = document.getElementById("resultsContainer");
+    var abHtml = '<div style="margin-top:8px;padding:8px;background:var(--primary-light);border-radius:var(--radius-sm);">' +
+        '<h3 style="font-size:12px;color:var(--primary);">🔬 A/B Test Results</h3>' +
+        '<p style="font-size:11px;"><strong>Version A:</strong> ' + sentA + ' sent, ' + errA + ' errors</p>' +
+        '<p style="font-size:11px;"><strong>Version B:</strong> ' + sentB + ' sent, ' + errB + ' errors</p>' +
+        '</div>';
+    el.innerHTML += abHtml;
+}
+
+// ========== Feature 5: Contact Groups / Saved Lists ==========
+function getSavedLists() {
+    var stored = localStorage.getItem("mailmergepro_contactgroups");
+    return stored ? JSON.parse(stored) : [];
+}
+
+function saveSavedListsStorage(lists) {
+    var json = JSON.stringify(lists);
+    if (json.length > 3 * 1024 * 1024) {
+        showStatus(t("sizeWarning"), "warning");
+    }
+    localStorage.setItem("mailmergepro_contactgroups", json);
+}
+
+function loadSavedListsUI() {
+    var container = document.getElementById("savedListCards");
+    if (!container) return;
+    container.innerHTML = "";
+    var lists = getSavedLists();
+    if (lists.length === 0) {
+        container.innerHTML = '<p class="hint">' + t("savedListsEmpty") + '</p>';
+        return;
+    }
+    lists.forEach(function(list, idx) {
+        var card = document.createElement("div");
+        card.className = "saved-list-card";
+        card.innerHTML = '<span class="list-name">' + escapeHtml(list.name) + '</span>' +
+            '<span class="list-meta">' + list.rows.length + ' rows</span>';
+        var del = document.createElement("button");
+        del.className = "btn-icon";
+        del.innerHTML = "&times;";
+        del.title = "Delete";
+        del.addEventListener("click", function(e) {
+            e.stopPropagation();
+            deleteSavedList(idx);
+        });
+        card.appendChild(del);
+        card.addEventListener("click", function(e) {
+            if (e.target.closest(".btn-icon")) return;
+            loadSavedList(idx);
+        });
+        container.appendChild(card);
+    });
+}
+
+function showSaveListDialog() {
+    document.getElementById("listNameInput").value = "";
+    document.getElementById("listNameDialog").style.display = "flex";
+    document.getElementById("listNameInput").focus();
+}
+
+function saveCurrentList() {
+    var name = document.getElementById("listNameInput").value.trim();
+    if (!name) return;
+    if (appState.rows.length === 0) return;
+    var lists = getSavedLists();
+    lists.push({
+        name: name,
+        headers: appState.headers.slice(),
+        rows: appState.rows.slice(),
+        createdAt: new Date().toISOString()
+    });
+    saveSavedListsStorage(lists);
+    document.getElementById("listNameDialog").style.display = "none";
+    loadSavedListsUI();
+}
+
+function loadSavedList(idx) {
+    var lists = getSavedLists();
+    var list = lists[idx];
+    if (!list) return;
+    appState.headers = list.headers;
+    appState.rows = list.rows;
+    renderDataPreview();
+    document.getElementById("btnStep1Next").disabled = false;
+    document.getElementById("btnSaveCurrentList").disabled = false;
+    document.getElementById("btnMergeLists").disabled = false;
+    updateStepBadge(1, String(appState.rows.length));
+}
+
+function deleteSavedList(idx) {
+    var lists = getSavedLists();
+    lists.splice(idx, 1);
+    saveSavedListsStorage(lists);
+    loadSavedListsUI();
+}
+
+function showMergeListDialog() {
+    var lists = getSavedLists();
+    var sel = document.getElementById("mergeListSelect");
+    sel.innerHTML = "";
+    if (lists.length === 0) {
+        sel.innerHTML = '<option value="">No saved lists</option>';
+    } else {
+        lists.forEach(function(l, i) {
+            var opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = l.name + " (" + l.rows.length + " rows)";
+            sel.appendChild(opt);
+        });
+    }
+    document.getElementById("mergeListDialog").style.display = "flex";
+}
+
+function mergeSelectedList() {
+    var sel = document.getElementById("mergeListSelect");
+    var idx = parseInt(sel.value);
+    var lists = getSavedLists();
+    var list = lists[idx];
+    document.getElementById("mergeListDialog").style.display = "none";
+    if (!list) return;
+    // Merge headers
+    var mergedHeaders = appState.headers.slice();
+    list.headers.forEach(function(h) {
+        if (mergedHeaders.indexOf(h) === -1) mergedHeaders.push(h);
+    });
+    // Normalize rows
+    var mergedRows = [];
+    appState.rows.forEach(function(row) {
+        var newRow = {};
+        mergedHeaders.forEach(function(h) { newRow[h] = row[h] !== undefined ? row[h] : ""; });
+        mergedRows.push(newRow);
+    });
+    list.rows.forEach(function(row) {
+        var newRow = {};
+        mergedHeaders.forEach(function(h) { newRow[h] = row[h] !== undefined ? row[h] : ""; });
+        mergedRows.push(newRow);
+    });
+    appState.headers = mergedHeaders;
+    appState.rows = mergedRows;
+    renderDataPreview();
+    updateStepBadge(1, String(appState.rows.length));
+}
+
+// ========== Feature 6: HTML Template Import ==========
+function handleHtmlImport(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+        var htmlContent = evt.target.result;
+        importHtmlContent(htmlContent);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+}
+
+function initHtmlDragDrop() {
+    var area = document.getElementById("htmlImportArea");
+    if (!area) return;
+    area.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        area.classList.add("drag-over");
+    });
+    area.addEventListener("dragleave", function() {
+        area.classList.remove("drag-over");
+    });
+    area.addEventListener("drop", function(e) {
+        e.preventDefault();
+        area.classList.remove("drag-over");
+        var file = e.dataTransfer.files[0];
+        if (file && (file.name.endsWith(".html") || file.name.endsWith(".htm"))) {
+            var reader = new FileReader();
+            reader.onload = function(evt) { importHtmlContent(evt.target.result); };
+            reader.readAsText(file);
+        }
+    });
+}
+
+function importHtmlContent(htmlContent) {
+    var editor = document.getElementById("emailBody");
+    editor.innerHTML = htmlContent;
+    editor.classList.remove("is-empty");
+    // Extract merge fields from imported HTML
+    var fields = htmlContent.match(/\{([^}]+)\}/g);
+    if (fields) {
+        console.log("Merge fields found in imported HTML:", fields);
+    }
+    showStatus(t("htmlImported"), "info");
+}
+
+// ========== Feature 7: Signature Auto-Insert ==========
+function showSignatureDialog() {
+    var textarea = document.getElementById("signatureTextarea");
+    textarea.value = appState.signatureHtml || "";
+    document.getElementById("chkAutoSignature").checked = appState.autoSignature;
+    document.getElementById("signatureDialog").style.display = "flex";
+}
+
+async function fetchOutlookSignature() {
+    var statusEl = document.getElementById("signatureFetchStatus");
+    statusEl.textContent = "Fetching signature...";
+    try {
+        var token = await getGraphToken();
+        // Create a temporary message and read back the body (which includes signature)
+        var draft = await graphFetch(GRAPH_BASE + "/me/messages", token, "POST", {
+            subject: "__sig_detect__",
+            body: { contentType: "HTML", content: "" }
+        });
+        var msgId = draft.id;
+        // Read the draft back
+        var msg = await graphFetch(GRAPH_BASE + "/me/messages/" + encodeURIComponent(msgId), token, "GET");
+        var sigContent = msg.body ? msg.body.content : "";
+        // Delete the temp draft
+        await graphFetch(GRAPH_BASE + "/me/messages/" + encodeURIComponent(msgId), token, "DELETE");
+        if (sigContent && sigContent.trim().length > 20) {
+            document.getElementById("signatureTextarea").value = sigContent;
+            statusEl.textContent = "Signature fetched!";
+        } else {
+            statusEl.textContent = "No signature found. Paste it manually.";
+        }
+    } catch (err) {
+        statusEl.textContent = "Could not fetch: " + (err.message || String(err));
+        console.warn("Signature fetch failed:", err);
+    }
+}
+
+function saveSignature() {
+    var content = document.getElementById("signatureTextarea").value;
+    var autoAppend = document.getElementById("chkAutoSignature").checked;
+    appState.signatureHtml = content;
+    appState.autoSignature = autoAppend;
+    localStorage.setItem("mailmergepro_signature", content);
+    localStorage.setItem("mailmergepro_autosignature", autoAppend ? "true" : "false");
+    document.getElementById("signatureDialog").style.display = "none";
+    document.getElementById("chkAutoSignatureInline").checked = autoAppend;
+    loadSignaturePreview();
+    showStatus(t("signatureSaved"), "info");
+}
+
+function loadSignaturePreview() {
+    var preview = document.getElementById("signaturePreview");
+    if (!preview) return;
+    if (appState.signatureHtml) {
+        preview.innerHTML = appState.signatureHtml;
+        preview.style.display = "block";
+    } else {
+        preview.style.display = "none";
+    }
+}
+
+// ========== Feature 8: Rate Limit Dashboard ==========
+function getDailySentCount() {
+    var stored = localStorage.getItem("mailmergepro_dailysent");
+    if (!stored) return 0;
+    try {
+        var data = JSON.parse(stored);
+        var today = new Date().toDateString();
+        if (data.date === today) return data.count;
+        // Different day, reset
+        localStorage.removeItem("mailmergepro_dailysent");
+        return 0;
+    } catch(e) { return 0; }
+}
+
+function updateDailySentCount(count) {
+    var today = new Date().toDateString();
+    var current = getDailySentCount();
+    localStorage.setItem("mailmergepro_dailysent", JSON.stringify({
+        date: today,
+        count: current + count
+    }));
+}
+
+function updateRateLimitDisplay() {
+    var sentToday = getDailySentCount();
+    var limit = 10000;
+    var pct = Math.min(100, Math.round(sentToday / limit * 100));
+    var el = document.getElementById("rateSentToday");
+    if (el) el.textContent = sentToday.toLocaleString();
+    var fill = document.getElementById("rateLimitFill");
+    if (fill) {
+        fill.style.width = pct + "%";
+        fill.className = "rate-limit-fill " + (pct < 50 ? "green" : pct < 80 ? "yellow" : "red");
+    }
+}
+
+function suggestDelay(recipientCount) {
+    var el = document.getElementById("rateSuggestion");
+    if (!el) return;
+    if (recipientCount <= 30) {
+        el.textContent = t("suggestedDelay") + ": 1s (low volume)";
+    } else if (recipientCount <= 500) {
+        el.textContent = t("suggestedDelay") + ": 2s";
+    } else if (recipientCount <= 2000) {
+        el.textContent = t("suggestedDelay") + ": 3-5s";
+    } else {
+        el.textContent = t("suggestedDelay") + ": 5-10s (high volume)";
+    }
+}
+
+// ========== Feature 10: Admin Dashboard ==========
+function openDashboard() {
+    buildDashboard();
+    document.getElementById("dashboardOverlay").classList.add("visible");
+}
+
+function closeDashboard() {
+    document.getElementById("dashboardOverlay").classList.remove("visible");
+}
+
+function buildDashboard() {
+    var stored = localStorage.getItem("mailmerge-pro-campaigns");
+    var campaigns = stored ? JSON.parse(stored) : [];
+
+    // Stats
+    var totalCampaigns = campaigns.length;
+    var totalEmails = 0;
+    var totalSent = 0;
+    campaigns.forEach(function(c) { totalEmails += (c.total || 0); totalSent += (c.sent || 0); });
+    var successRate = totalEmails > 0 ? Math.round(totalSent / totalEmails * 100) : 0;
+    var avgSize = totalCampaigns > 0 ? Math.round(totalEmails / totalCampaigns) : 0;
+
+    var statsHtml = '' +
+        '<div class="dash-stat"><span class="dash-value">' + totalCampaigns + '</span><span class="dash-label">' + t("totalCampaigns") + '</span></div>' +
+        '<div class="dash-stat"><span class="dash-value">' + totalSent.toLocaleString() + '</span><span class="dash-label">' + t("totalEmails") + '</span></div>' +
+        '<div class="dash-stat"><span class="dash-value">' + successRate + '%</span><span class="dash-label">' + t("successRate") + '</span></div>' +
+        '<div class="dash-stat"><span class="dash-value">' + avgSize + '</span><span class="dash-label">' + t("avgCampaignSize") + '</span></div>';
+    document.getElementById("dashStats").innerHTML = statsHtml;
+
+    // Monthly chart (text-based CSS bars)
+    var monthlyData = {};
+    campaigns.forEach(function(c) {
+        var dateStr = c.dateISO || c.date;
+        var d;
+        try { d = new Date(dateStr); } catch(e) { return; }
+        if (isNaN(d.getTime())) return;
+        var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        if (!monthlyData[key]) monthlyData[key] = 0;
+        monthlyData[key] += (c.sent || 0);
+    });
+    var months = Object.keys(monthlyData).sort().slice(-6);
+    var maxMonthly = Math.max.apply(null, months.map(function(m) { return monthlyData[m]; }).concat([1]));
+    var chartHtml = "";
+    months.forEach(function(m) {
+        var pct = Math.round(monthlyData[m] / maxMonthly * 100);
+        chartHtml += '<div class="dash-bar-row">' +
+            '<span class="dash-bar-label">' + m.slice(5) + '</span>' +
+            '<div class="dash-bar-track"><div class="dash-bar-fill" style="width:' + pct + '%;"></div></div>' +
+            '<span class="dash-bar-value">' + monthlyData[m] + '</span>' +
+            '</div>';
+    });
+    document.getElementById("dashMonthlyChart").innerHTML = chartHtml || '<p class="hint">No data yet.</p>';
+
+    // Top recipients
+    var recipientCounts = {};
+    campaigns.forEach(function(c) {
+        if (c.recipients && Array.isArray(c.recipients)) {
+            c.recipients.forEach(function(r) {
+                if (!r) return;
+                var email = r.toLowerCase();
+                recipientCounts[email] = (recipientCounts[email] || 0) + 1;
+            });
+        }
+    });
+    var topRecipients = Object.keys(recipientCounts)
+        .map(function(e) { return { email: e, count: recipientCounts[e] }; })
+        .sort(function(a, b) { return b.count - a.count; })
+        .slice(0, 5);
+    var topHtml = "";
+    topRecipients.forEach(function(r) {
+        topHtml += '<div class="dash-campaign-item"><span>' + escapeHtml(r.email) + '</span><span>' + r.count + 'x</span></div>';
+    });
+    document.getElementById("dashTopRecipients").innerHTML = topHtml || '<p class="hint">No data yet.</p>';
+
+    // Recent campaigns
+    var recentHtml = "";
+    campaigns.slice(0, 10).forEach(function(c) {
+        var rate = c.total > 0 ? Math.round(c.sent / c.total * 100) : 0;
+        recentHtml += '<div class="dash-campaign-item">' +
+            '<span>' + escapeHtml(c.name) + '</span>' +
+            '<span>' + escapeHtml(c.date) + ' — ' + c.sent + '/' + c.total + ' (' + rate + '%)</span>' +
+            '</div>';
+    });
+    document.getElementById("dashRecentCampaigns").innerHTML = recentHtml || '<p class="hint">No campaigns yet.</p>';
 }
