@@ -1,6 +1,6 @@
 # MailMerge-Pro User Guide
 
-> **Version:** 1.0 | **Platform:** Outlook 365 (Web & Desktop) | **License:** Free / Pro / Enterprise
+> **Version:** 3.0 | **Platform:** Outlook 365 (Web & Desktop) | **License:** Free / Pro / Enterprise | **Features:** 44
 
 ---
 
@@ -11,6 +11,7 @@
 3. **Upload** an Excel file with columns like `Email`, `FirstName`, `Company`
 4. **Compose** your email using merge fields: `Hello {FirstName}, welcome to {Company}!`
 5. Click **Preview** to verify personalization → Click **Send All**
+6. **New in v3.0:** Save email templates, schedule sends, A/B test subject lines, and view your dashboard — all from the same task pane.
 
 That's it — personalized emails sent to every row in your spreadsheet.
 
@@ -27,6 +28,17 @@ That's it — personalized emails sent to every row in your spreadsheet.
 - [7. Preview & Testing](#7-preview--testing)
 - [8. Advanced Features](#8-advanced-features)
 - [9. UI Features](#9-ui-features)
+- [10. New in v3.0](#10-new-in-v30)
+  - [10.1 Email Templates Library](#101-email-templates-library)
+  - [10.2 Scheduled Sending](#102-scheduled-sending)
+  - [10.3 Email Tracking](#103-email-tracking)
+  - [10.4 A/B Testing](#104-ab-testing)
+  - [10.5 Contact Groups & Segments](#105-contact-groups--segments)
+  - [10.6 HTML Template Import](#106-html-template-import)
+  - [10.7 Signature Auto-Insert](#107-signature-auto-insert)
+  - [10.8 Rate Limit Dashboard](#108-rate-limit-dashboard)
+  - [10.9 Multi-Language (i18n)](#109-multi-language-i18n)
+  - [10.10 Local Admin Dashboard](#1010-local-admin-dashboard)
 
 ---
 
@@ -894,6 +906,329 @@ The Sales Team
 - Pop-out mode gives you the best experience for composing — use it for complex merges.
 - The add-in remembers your last window size.
 - On mobile Outlook (iOS/Android), the add-in opens full-screen in a bottom sheet.
+
+---
+
+## 10. New in v3.0
+
+> **v3.0 brings 10 new features** — expanding MailMerge-Pro from 34 to **44 total features**. Templates, scheduling, A/B testing, contact groups, multi-language support, and more.
+
+---
+
+### 10.1 Email Templates Library
+
+**What it does:** Provides 3 built-in email templates and lets you save, load, and delete your own custom templates. Templates are stored in your browser's localStorage — no server or cloud sync involved.
+
+**Step-by-step:**
+
+1. In the email composer, click the **"Templates"** button (📄 icon) in the toolbar.
+2. The Templates panel opens with two tabs: **Built-in** and **My Templates**.
+3. **Built-in templates** include:
+   - **Professional Invoice** — Formal invoice notification with `{FirstName}`, `{Company}`, `{InvoiceAmount}` merge fields.
+   - **Event Invitation** — Friendly event invite with `{FirstName}`, `{EventName}`, `{EventDate}`, `{Location}`.
+   - **Follow-Up Reminder** — Polite follow-up with `{FirstName}`, `{Company}`, `{Topic}`, `{LastContactDate}`.
+4. Click a template to preview it. Click **"Use This Template"** to load it into the composer.
+5. **Save a custom template:** Compose your email, then click **"Save as Template"** in the Templates panel. Enter a name (e.g., "Q1 Marketing Blast") and click **Save**.
+6. **Load a custom template:** Open the **My Templates** tab, click any saved template to preview, then click **"Use This Template"**.
+7. **Delete a custom template:** Hover over a saved template and click the **🗑 trash icon**.
+
+**Example custom template:**
+
+| Template Name | Subject | Body (excerpt) |
+|---|---|---|
+| Q1 Marketing Blast | {Company} — Special Q1 Offer | Dear {FirstName}, We're excited to offer... |
+| Onboarding Welcome | Welcome to {Company}, {FirstName}! | Hi {FirstName}, Congratulations on joining... |
+
+**Tips & Gotchas:**
+- Built-in templates cannot be deleted or edited — but you can load one, modify it, and save as a new custom template.
+- Templates are stored in **localStorage** — they stay on this device and browser only. They are NOT synced across devices or browsers.
+- Clearing your browser data deletes saved templates. Export important templates by copying the email content before clearing data.
+- Templates include the subject line, body, and sending options (CC, BCC, importance, etc.).
+
+---
+
+### 10.2 Scheduled Sending
+
+**What it does:** Lets you schedule your mail merge to send at a specific future date and time. Includes a countdown timer and a cancel button. Requires Outlook to remain open until the scheduled time.
+
+**Step-by-step:**
+
+1. Compose your email and upload your data as usual.
+2. Instead of clicking **"Send All"**, click the **clock icon (🕐)** next to the Send button — or click the **"Schedule Send"** button.
+3. A **date/time picker** appears:
+   - **Date:** Select a future date from the calendar.
+   - **Time:** Select the send time (in your local timezone). Use the hour/minute dropdowns or type directly.
+4. Click **"Schedule"**.
+5. A **countdown timer** appears in the task pane: `"Scheduled: Sending in 2h 34m 12s"`.
+6. The task pane shows a **"Cancel Scheduled Send"** button (red). Click it anytime before the scheduled time to cancel.
+7. When the countdown reaches zero, emails send automatically with the configured delay between each send.
+
+**Example schedule:**
+- Current time: Monday 9:00 AM
+- Scheduled time: Tuesday 8:00 AM
+- Countdown shows: `"23h 00m 00s"`
+- At Tuesday 8:00 AM, all 48 emails begin sending.
+
+**Tips & Gotchas:**
+- **⚠️ Outlook must remain open** for the scheduled send to execute. If you close Outlook or the add-in task pane, the scheduled send is cancelled.
+- The schedule uses your **local timezone** — verify the displayed time if you're scheduling for recipients in different timezones.
+- You can schedule up to 7 days in advance.
+- If your computer goes to sleep, the send may be delayed until it wakes up.
+- Scheduled sends still respect your send delay (throttle) setting.
+- You can continue using Outlook normally while a send is scheduled — just keep the task pane open.
+
+---
+
+### 10.3 Email Tracking
+
+**What it does:** Requests read receipts via the Microsoft Graph API `isReadReceiptRequested` flag, so you can track whether recipients have opened your email.
+
+**Step-by-step:**
+
+1. In the **Sending Options** panel, toggle **"Email Tracking (Read Receipts)"** ON.
+2. This sets the `isReadReceiptRequested` flag on each email via the Graph API.
+3. When a recipient opens the email, their mail client may send a read receipt back to you.
+4. Read receipts arrive as emails in your inbox: `"Read: [Original Subject]"`.
+5. In **Campaign History** (Section 8.2), tracked campaigns show a **"Tracking"** badge. Click to see which recipients sent read receipts.
+
+**Tips & Gotchas:**
+- This uses the same Graph API flag as the existing Read Receipts toggle (Section 6.3). The v3.0 enhancement adds tracking visibility in Campaign History.
+- Recipients can **decline** to send a read receipt — tracking is not guaranteed.
+- Some organizations suppress read receipt prompts entirely.
+- For compliance: read receipts are a standard email feature, not pixel tracking.
+
+---
+
+### 10.4 A/B Testing
+
+**What it does:** Lets you create two versions of your email (Version A and Version B) and split your recipients between them to test which performs better. Includes tabbed editors and configurable split ratios.
+
+**Step-by-step:**
+
+1. In the email composer, click the **"A/B Test"** toggle (🔬 icon) in the toolbar.
+2. The composer switches to a **tabbed view** with two tabs: **Version A** and **Version B**.
+3. **Version A tab:** Write your first email version (e.g., formal tone, specific subject line).
+4. **Version B tab:** Write your second email version (e.g., casual tone, different subject line).
+5. Below the editors, set the **Split Ratio**:
+   - **50/50** — Half your recipients get A, half get B (default).
+   - **70/30** — 70% get A, 30% get B (use when you have a preferred version).
+   - **80/20** — 80% get A, 20% get B (small test of version B).
+6. Click **Preview** to see which recipients get which version. The preview carousel shows **"[A]"** or **"[B]"** next to each recipient.
+7. Click **"Send All"** — recipients are randomly assigned to A or B based on the split ratio.
+8. After sending, the **completion summary** shows results per version:
+
+   | Version | Recipients | Sent | Failed |
+   |---|---|---|---|
+   | A (Formal) | 24 | 24 | 0 |
+   | B (Casual) | 24 | 23 | 1 |
+
+9. In **Campaign History**, A/B test campaigns show results for each version separately.
+
+**Example A/B Test:**
+- **Version A Subject:** `Your January Invoice from {Company}`
+- **Version B Subject:** `{FirstName}, your invoice is ready! 📄`
+- **Split:** 50/50
+- After sending, compare open rates (via read receipts) to see which subject performs better.
+
+**Tips & Gotchas:**
+- Both versions can have different subjects, body content, and formatting — but they share the same recipient list, CC/BCC, and attachments.
+- The split is randomized — you can't manually assign specific recipients to A or B.
+- A/B testing works with all other features (attachments, scheduling, read receipts, etc.).
+- For meaningful results, use at least 50 recipients per version.
+- You can only test 2 versions (A and B) per campaign — not 3 or more.
+
+---
+
+### 10.5 Contact Groups & Segments
+
+**What it does:** Lets you save, load, delete, and merge recipient lists as named contact groups. Groups are stored in your browser's localStorage for quick reuse across campaigns.
+
+**Step-by-step:**
+
+1. Upload your data (Excel/CSV) as usual.
+2. Click the **"Contact Groups"** button (👥 icon) in the Data Source panel.
+3. The Contact Groups panel opens with options:
+   - **Save Current List:** Click **"Save as Group"**, enter a name (e.g., "Marketing Team" or "Q1 Prospects"), and click **Save**. All currently loaded recipients are saved.
+   - **Load a Group:** Select a saved group from the list and click **"Load"**. The recipients replace the current data in the task pane.
+   - **Merge Groups:** Select two or more groups and click **"Merge"**. Recipients are combined, and duplicates (by email address) are removed automatically.
+   - **Delete a Group:** Hover over a group and click the **🗑 trash icon**.
+4. The group list shows: group name, recipient count, and date saved:
+
+   | Group Name | Recipients | Saved |
+   |---|---|---|
+   | Marketing Team | 35 | Jan 15, 2024 |
+   | Q1 Prospects | 120 | Jan 10, 2024 |
+   | VIP Clients | 15 | Jan 5, 2024 |
+
+5. Click **"Load"** on any group to instantly populate the data table without re-uploading a file.
+
+**Tips & Gotchas:**
+- Contact groups are stored in **localStorage** — they persist across sessions on the same device and browser, but are NOT synced across devices.
+- Merging groups performs automatic de-duplication based on the email address column.
+- Maximum group size: ~5,000 recipients (limited by localStorage capacity, typically 5-10 MB).
+- Groups save ALL columns from your spreadsheet, not just the email address.
+- Clearing browser data deletes all saved groups. Export critical groups to Excel/CSV first.
+
+---
+
+### 10.6 HTML Template Import
+
+**What it does:** Lets you import pre-designed HTML email templates from `.html` files. Supports file picker and drag-and-drop. Automatically detects `{MergeField}` placeholders in the HTML.
+
+**Step-by-step:**
+
+1. In the email composer, click the **"Import HTML"** button (📥 icon) in the toolbar.
+2. Choose one of two methods:
+   - **File picker:** Click **"Choose File"** and select a `.html` file from your computer.
+   - **Drag-and-drop:** Drag a `.html` file directly onto the composer area. A blue drop zone appears: `"Drop HTML file here"`.
+3. The HTML is loaded into the rich text editor with full formatting preserved.
+4. MailMerge-Pro **auto-detects merge field placeholders** in the HTML:
+   - Scans for `{FieldName}` patterns in the HTML.
+   - Displays detected fields as chips above the editor: `Found: {FirstName}, {Company}, {Amount}`.
+   - Unmatched fields (not in your spreadsheet) show a yellow warning.
+5. Edit the imported HTML as needed using the WYSIWYG editor.
+
+**Example:**
+- You design a beautiful email in an HTML editor (e.g., MJML, Unlayer, Stripo).
+- The HTML contains: `<p>Hello {FirstName}, welcome to {Company}!</p>`.
+- Import the file → MailMerge-Pro detects `{FirstName}` and `{Company}` as merge fields.
+- Upload your spreadsheet → the merge fields match your columns → send!
+
+**Tips & Gotchas:**
+- Only `.html` and `.htm` files are accepted. Other formats (`.txt`, `.docx`) are rejected with an error.
+- Complex HTML with external CSS may not render identically in all email clients. Test with Preview and send a Test Email.
+- Inline CSS is recommended for email HTML (most email clients strip `<style>` tags).
+- Imported HTML replaces the current editor content. Save your work as a template first if needed.
+- The drag-and-drop zone is only visible when you're dragging a file over the composer area.
+
+---
+
+### 10.7 Signature Auto-Insert
+
+**What it does:** Automatically appends your email signature to every merge email. Fetches your signature from the Microsoft Graph API, or lets you paste one manually. Includes an auto-append toggle.
+
+**Step-by-step:**
+
+1. Click the **"Signature"** button (✒️ icon) in the email composer toolbar, or go to **Settings (⚙) → Signature**.
+2. The Signature panel shows two options:
+   - **Auto-fetch from Outlook:** Click **"Fetch My Signature"**. MailMerge-Pro calls the Graph API to retrieve your default Outlook signature. It appears in the preview area.
+   - **Manual paste:** Click **"Paste Signature"** and paste your HTML or plain-text signature into the text area.
+3. Toggle **"Auto-append signature"** ON (default: ON).
+4. When enabled, your signature is automatically appended to the bottom of every merge email.
+5. In Preview mode, you can see the signature at the bottom of each email.
+
+**Example signature:**
+
+> **Jane Smith**
+> Marketing Manager | Contoso Ltd
+> jane@contoso.com | +1 (555) 123-4567
+> *Sent with MailMerge-Pro*
+
+**Tips & Gotchas:**
+- The Graph API fetches the signature configured in **Outlook on the Web** → Settings → Compose and reply → Email signature.
+- If the Graph API doesn't return a signature (e.g., signature is configured only in desktop Outlook), use the manual paste option.
+- The auto-append toggle lets you disable signature insertion for specific campaigns (e.g., when the template already includes a signature).
+- Signature formatting (images, links, fonts) is preserved. However, signature images must be hosted online (not embedded base64) for reliable display.
+- The signature is appended AFTER the email body and BEFORE any unsubscribe footer.
+
+---
+
+### 10.8 Rate Limit Dashboard
+
+**What it does:** Displays a real-time dashboard showing your daily email send count against Exchange Online limits. Includes a color-coded progress bar and auto-suggested delay to stay under limits.
+
+**Step-by-step:**
+
+1. The Rate Limit Dashboard appears in the **Sending Options** panel, just above the Send button.
+2. It shows:
+   - **Daily Send Counter:** `"142 / 10,000 emails sent today"` (updates in real-time as you send).
+   - **Color-coded bar:**
+     - 🟢 **Green** (0-70%): Safe zone — plenty of capacity remaining.
+     - 🟡 **Yellow** (70-90%): Caution — approaching the daily limit.
+     - 🔴 **Red** (90-100%): Danger — near or at the limit. Sending may be throttled.
+   - **Auto-suggested delay:** Based on your current usage and remaining quota, the dashboard suggests an optimal send delay:
+     - Green zone: `"Suggested delay: 1-2 seconds"`
+     - Yellow zone: `"Suggested delay: 5-10 seconds"`
+     - Red zone: `"Suggested delay: 15-30 seconds — consider waiting until tomorrow"`
+3. Click **"Apply Suggested Delay"** to automatically set the recommended delay in the Send Delay slider.
+
+**Tips & Gotchas:**
+- Exchange Online limits are approximately **10,000 emails/day** and **30 emails/minute**. These limits vary by tenant configuration.
+- The counter tracks sends from the current MailMerge-Pro session. It does NOT include emails sent from other apps or manually from Outlook.
+- The counter resets at midnight (UTC).
+- If you hit the daily limit, Exchange returns a 429 error. MailMerge-Pro pauses and shows: `"Daily limit reached. Resume tomorrow or reduce recipient count."`.
+- The auto-suggested delay is a recommendation — you can still set a custom delay.
+
+---
+
+### 10.9 Multi-Language (i18n)
+
+**What it does:** Translates the entire MailMerge-Pro interface into 6 languages. A language selector in the header lets you switch instantly.
+
+**Supported languages:**
+
+| Code | Language | Flag |
+|---|---|---|
+| `en` | English | 🇺🇸 |
+| `es` | Spanish (Español) | 🇪🇸 |
+| `fr` | French (Français) | 🇫🇷 |
+| `de` | German (Deutsch) | 🇩🇪 |
+| `pt` | Portuguese (Português) | 🇧🇷 |
+| `ja` | Japanese (日本語) | 🇯🇵 |
+
+**Step-by-step:**
+
+1. In the **header bar** of the task pane, click the **language selector** (🌐 globe icon) next to your profile name.
+2. A dropdown appears with the 6 available languages.
+3. Select a language — the entire UI translates immediately (no reload required).
+4. Your language preference is saved in **localStorage** and persists across sessions.
+
+**Example:**
+- Select **Español** → All buttons, labels, tooltips, and messages switch to Spanish.
+- "Send All" → "Enviar Todo"
+- "Upload Data" → "Subir Datos"
+- "Preview" → "Vista Previa"
+
+**Tips & Gotchas:**
+- The language setting affects only the **add-in UI** — NOT the email content you compose. Your emails are sent in whatever language you write them in.
+- Language preference is stored in **localStorage** — it's per-device, per-browser. Switching devices requires re-selecting the language.
+- Error messages and tooltips are also translated.
+- If a translation is missing for a specific UI element, it falls back to English.
+
+---
+
+### 10.10 Local Admin Dashboard
+
+**What it does:** Provides a personal analytics dashboard showing your mail merge activity: total campaigns, total emails sent, success rate, top recipients, monthly activity chart, and recent campaigns. All data is stored locally in your browser.
+
+**Step-by-step:**
+
+1. Click the **"Dashboard"** tab (📊 icon) in the task pane navigation.
+2. The dashboard displays:
+   - **Summary Cards (top row):**
+     - 📬 **Total Campaigns:** `12`
+     - 📧 **Total Emails Sent:** `1,847`
+     - ✅ **Success Rate:** `98.7%`
+   - **Top Recipients (list):** The 10 email addresses you've sent to most frequently:
+
+     | Recipient | Times Emailed |
+     |---|---|
+     | alice@contoso.com | 8 |
+     | bob@fabrikam.com | 7 |
+     | carol@northwind.com | 6 |
+
+   - **Monthly Activity Chart (bar chart):** A 6-month bar chart showing emails sent per month:
+     - Oct: 120 | Nov: 340 | Dec: 280 | Jan: 450 | Feb: 380 | Mar: 277
+   - **Recent Campaigns (table):** Last 10 campaigns with date, subject, recipient count, and success/fail status.
+3. Click any campaign row in "Recent Campaigns" to jump to its full details in Campaign History (Section 8.2).
+
+**Tips & Gotchas:**
+- Dashboard data is calculated from your **Campaign History** stored in localStorage.
+- Data is **local only** — your admin, IT department, or anyone else cannot see your dashboard. It is NOT shared or synced.
+- Clearing browser data resets the dashboard to zero.
+- The monthly activity chart auto-scales to show the last 6 months with data.
+- The "Top Recipients" list can help identify over-contacted recipients (useful for avoiding spam fatigue).
+- Dashboard data does NOT include emails sent manually from Outlook — only those sent via MailMerge-Pro.
 
 ---
 

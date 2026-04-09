@@ -233,6 +233,16 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 | 10 | Send to internal recipient | Email received successfully |
 | 11 | Open in Outlook Desktop (classic) | Add-in loads in task pane |
 | 12 | Open in New Outlook (Monarch) | Add-in available under Apps |
+| 13 | Save and load a custom email template | Template saves to localStorage and loads into composer |
+| 14 | Schedule a send for 5 minutes in the future | Countdown appears; emails send at scheduled time |
+| 15 | Enable email tracking (read receipts) | isReadReceiptRequested flag set on sent emails |
+| 16 | Create an A/B test with 50/50 split | Both versions sent; results summary shows per-version stats |
+| 17 | Save and load a contact group | Group saves to localStorage and loads into data table |
+| 18 | Import an HTML template file | HTML renders in editor; merge fields auto-detected |
+| 19 | Fetch signature from Graph API | Signature appears in panel and appends to emails |
+| 20 | Verify rate limit dashboard | Daily counter and color-coded bar display correctly |
+| 21 | Switch language to Spanish | All UI labels switch to Spanish; preference persists |
+| 22 | View the local admin dashboard | Stats, charts, and recent campaigns display correctly |
 
 ### Sample Excel for Testing
 
@@ -277,6 +287,7 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 | Add-in not visible | Not deployed to user | Deploy via M365 admin center to the user |
 | Per-recipient attachment missing | Filename mismatch | Ensure spreadsheet filenames match uploaded file names (just filename, not full path) |
 | Sign-in redirect error | Wrong redirect URI | Verify SPA redirect URI in Azure AD matches your hosting URL exactly |
+| Scheduled send didn't execute | Outlook or task pane was closed | Outlook and the add-in task pane must remain open for scheduled sends to execute |
 
 ### Required URLs to Whitelist (Firewall/Proxy)
 
@@ -314,6 +325,23 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 - ✅ Audit logs: all emails appear in Sent Items and Exchange message trace
 - ✅ Compatible with GDPR, HIPAA (when M365 is configured for compliance)
 
+### Local Storage Usage (v3.0)
+
+Several v3.0 features use browser `localStorage` to persist data on the user's device:
+
+| Data | localStorage Key | Purpose | Synced Across Devices? |
+|---|---|---|---|
+| Email templates | `mailmergepro_templates` | Custom saved templates | ❌ No — device-only |
+| Contact groups | `mailmergepro_groups` | Saved recipient lists | ❌ No — device-only |
+| Campaign history | `mailmergepro_campaigns` | Past campaign records and dashboard data | ❌ No — device-only |
+| Language preference | `mailmergepro_lang` | User's selected UI language | ❌ No — device-only |
+| Signature | `mailmergepro_signature` | Cached email signature | ❌ No — device-only |
+
+**Important notes:**
+- All localStorage data resides **only on the user's device** and specific browser profile. It is NOT synced to the cloud, NOT accessible by admins, and NOT visible to other users.
+- Clearing browser data (cache/cookies) will erase all localStorage items.
+- Scheduled sends require Outlook and the add-in task pane to remain open until the send time.
+
 ### Permissions Used
 
 | Permission | Type | Purpose | Sensitivity |
@@ -329,7 +357,7 @@ All permissions are **delegated** (act as the signed-in user), not application-l
 
 ## 10. Feature List
 
-### Core Features (34 total)
+### Core Features (44 total)
 
 | # | Feature | Description |
 |---|---|---|
@@ -367,6 +395,16 @@ All permissions are **delegated** (act as the signed-in user), not application-l
 | 32 | Dark mode | System and Office theme support |
 | 33 | Responsive design | Works in narrow task panes |
 | 34 | Keyboard shortcuts | Ctrl+Enter to send |
+| 35 | Email templates library | 3 built-in + save/load/delete custom templates (localStorage) |
+| 36 | Scheduled sending | Date/time picker, countdown timer, cancel button |
+| 37 | Email tracking | Read receipts via Graph API isReadReceiptRequested flag |
+| 38 | A/B testing | Tabbed editors (A/B), configurable split ratio, results per version |
+| 39 | Contact groups/segments | Save/load/delete/merge recipient lists (localStorage) |
+| 40 | HTML template import | File picker + drag-and-drop .html files with auto-detection |
+| 41 | Signature auto-insert | Fetches from Graph API or manual paste, auto-append toggle |
+| 42 | Rate limit dashboard | Daily send counter, color-coded bar, auto-suggested delay |
+| 43 | Multi-language (i18n) | 6 languages: EN, ES, FR, DE, PT, JA with header selector |
+| 44 | Local admin dashboard | Campaign stats, top recipients, monthly chart, success rate |
 
 ---
 

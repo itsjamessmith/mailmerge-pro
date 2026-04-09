@@ -1,7 +1,7 @@
 # MailMerge-Pro: Intune Deployment Guide
 
-> **Audience:** IT Administrators | **Platform:** Microsoft 365 / Intune / Azure AD
-> **Last Updated:** 2024-01
+> **Audience:** IT Administrators | **Platform:** Microsoft 365 / Intune / Azure AD | **Features:** 44
+> **Last Updated:** 2025-01 (v3.0)
 
 ---
 
@@ -391,7 +391,7 @@ If you change the **manifest.xml** itself (e.g., adding new permissions, changin
 
 Update the version in `manifest.xml` following semantic versioning:
 ```xml
-<Version>1.2.0</Version>
+<Version>3.0.0</Version>
 ```
 - **Major** (2.0.0): Breaking changes or major feature overhaul
 - **Minor** (1.2.0): New features, backward-compatible
@@ -525,6 +525,24 @@ Ask users to verify the add-in is available:
 
 ## Troubleshooting
 
+### Important: localStorage Data (v3.0)
+
+MailMerge-Pro v3.0 stores several types of data in the browser's `localStorage` on each user's device. **This data is per-device and per-browser — it does NOT roam with the user's profile and is NOT synced via Intune, OneDrive, or Enterprise State Roaming.**
+
+| localStorage Data | Description | Roaming? | Backed Up by Intune? |
+|---|---|---|---|
+| Email templates | User's saved custom email templates | ❌ No | ❌ No |
+| Contact groups | User's saved recipient lists | ❌ No | ❌ No |
+| Campaign history | Past campaign records and dashboard stats | ❌ No | ❌ No |
+| Language preference | User's selected UI language (EN/ES/FR/DE/PT/JA) | ❌ No | ❌ No |
+| Signature cache | User's cached email signature | ❌ No | ❌ No |
+
+**Implications for IT admins:**
+- If a user switches to a new device, their templates, contact groups, and campaign history do **not** transfer automatically. They will need to recreate them.
+- Clearing the browser cache/data on a managed device (e.g., via Intune remediation script) will erase these items.
+- **Scheduled sends** require Outlook and the add-in task pane to remain open. If a device restart policy or sleep policy interrupts Outlook, scheduled sends will not execute.
+- localStorage data is **not visible** to administrators through any admin console. It is private to the user on that device.
+
 | Issue | Cause | Solution |
 |---|---|---|
 | Add-in doesn't appear after 24h | Deployment not propagated | Check admin center status; verify user is in assigned group |
@@ -535,6 +553,9 @@ Ask users to verify the add-in is available:
 | "Trusted catalog" error | Catalog URL not trusted | Add URL to trusted catalogs via Group Policy or Intune |
 | Consent prompt appears for each user | Admin consent not granted | Grant admin consent in Azure AD → Enterprise Apps → MailMerge-Pro |
 | Mobile not showing add-in | Mobile support lag | Wait 48 hours; verify manifest has `MobileFormFactor` entry |
+| Templates/groups missing after device swap | localStorage is device-specific | Templates, contact groups, and campaign history are stored in browser localStorage — they do not roam across devices |
+| Scheduled send did not execute | Outlook or task pane was closed | Scheduled sends require Outlook and the task pane to remain open. Device restart or sleep policies may interrupt. |
+| Language reverts to English on new device | Language preference in localStorage | User must re-select their language on each new device/browser |
 
 ### Clearing the Office Web Add-in Cache (Windows)
 

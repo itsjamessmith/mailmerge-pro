@@ -51,6 +51,14 @@
 | User's OAuth token | Browser (MSAL.js) | Browser localStorage | Microsoft Azure AD only |
 | Campaign history | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
 | Merge field values | Browser (JavaScript) | Browser memory only | Microsoft Exchange (merged into email) |
+| Email templates | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
+| Contact groups | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
+| Language preference | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
+| Email signature (Graph) | Browser (MSAL.js + Graph API) | Browser localStorage (cached) | ❌ Nowhere (fetched from user's own Exchange settings) |
+| Email signature (manual) | Browser (JavaScript) | Browser localStorage | Microsoft Exchange (appended to email body) |
+| Dashboard / campaign stats | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
+| A/B test configuration | Browser (JavaScript) | Browser memory only | ❌ Nowhere |
+| Scheduled send settings | Browser (JavaScript) | Browser memory only | ❌ Nowhere (timer runs in-browser) |
 
 ### What Happens When You Upload a Spreadsheet
 1. You select a file using the browser's file picker
@@ -71,6 +79,24 @@
 3. The base64 data exists only in browser memory
 4. When sending, the base64 is included in the Graph API call to create the email
 5. **Attachment files are never uploaded to any external server**
+
+### What Happens With localStorage Data (v3.0)
+
+Several v3.0 features store data in the browser's localStorage:
+
+1. **Templates** — When you save a custom email template, the subject, body, and options are serialized as JSON and stored in localStorage under `mailmergepro_templates`.
+2. **Contact Groups** — When you save a recipient list as a contact group, the rows and column headers are stored in localStorage under `mailmergepro_groups`.
+3. **Campaign History** — Each completed campaign's summary (date, subject, recipient count, success/fail counts) is stored in localStorage under `mailmergepro_campaigns`. This also powers the Local Admin Dashboard.
+4. **Language Preference** — Your selected UI language is stored in localStorage under `mailmergepro_lang`.
+5. **Signature** — Your fetched or manually pasted signature is cached in localStorage under `mailmergepro_signature`.
+
+**Key privacy facts about localStorage:**
+- localStorage is **sandboxed per origin** — only MailMerge-Pro running on the same domain can read this data.
+- Data **stays on the device** — it is NOT synced to OneDrive, Microsoft 365, your organization's servers, or any cloud service.
+- Data is **NOT accessible by administrators** — your IT admin cannot view your templates, groups, or campaign history.
+- Data is **NOT encrypted** by default — anyone with physical access to the device and browser could inspect localStorage via browser developer tools.
+- Clearing the browser's site data (Settings → Clear browsing data) removes ALL localStorage items.
+- localStorage data does **NOT roam** across devices — switching to a different computer means starting fresh.
 
 ---
 
@@ -205,3 +231,21 @@ A: The add-in won't load until it's back up, but no data is lost. You can self-h
 
 **Q: Is the add-in safe for HR/payroll/legal emails?**
 A: Yes. The data handling is equivalent to manually composing emails in Outlook. All Exchange compliance policies (encryption, DLP, retention) apply equally.
+
+**Q: Where are my email templates stored?**
+A: In your browser's localStorage on your device only. Templates are NOT sent to any server, NOT synced to the cloud, and NOT accessible by your IT admin. Clearing browser data deletes them.
+
+**Q: Where are my contact groups stored?**
+A: Same as templates — in your browser's localStorage on your device. They are local-only, not synced across devices, and not visible to administrators.
+
+**Q: Is my campaign history visible to my admin?**
+A: No. Campaign history and dashboard data are stored in your browser's localStorage. Your IT admin cannot see your campaign stats, top recipients, or send history through MailMerge-Pro. However, all emails sent via MailMerge-Pro appear in your Sent Items and Exchange message trace, which admins CAN access — this is the same as any email you send from Outlook.
+
+**Q: Does the scheduled sending feature send data to a server?**
+A: No. The schedule timer runs entirely in your browser's JavaScript runtime. No scheduling data is sent to any server. The trade-off is that Outlook and the task pane must remain open for the scheduled send to execute.
+
+**Q: Does the signature auto-fetch feature access my mailbox?**
+A: The auto-fetch uses the Microsoft Graph API to retrieve your configured email signature from your Exchange Online settings. This is the same API used to display your signature in Outlook on the Web. MailMerge-Pro only reads the signature — it does not modify it.
+
+**Q: Is the multi-language feature sending my data to a translation service?**
+A: No. All translations are pre-built and bundled into the add-in's static JavaScript files. No data is sent to Google Translate, DeepL, or any other translation service. The language selection only changes which pre-built UI strings are displayed.
