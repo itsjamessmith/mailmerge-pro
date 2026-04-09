@@ -411,11 +411,30 @@ async function signIn() {
     }
 }
 
-function signOut() {
+async function signOut() {
     console.log("signOut");
-    const accounts = msalInstance ? msalInstance.getAllAccounts() : [];
-    if (accounts.length > 0) msalInstance.clearCache();
+    try {
+        if (msalInstance) {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                // Clear the specific account from cache
+                accounts.forEach(acct => {
+                    msalInstance.setActiveAccount(null);
+                    try { msalInstance.getTokenCache().removeAccount(acct); } catch(_) {}
+                });
+            }
+            // Clear all MSAL cache from localStorage
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith("msal.") || key.includes("login.microsoftonline")) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("signOut cache clear error:", err);
+    }
     updateAuthUI(null);
+    console.log("signOut complete");
 }
 
 async function getGraphToken() {
@@ -441,7 +460,7 @@ function initUI() {
     console.log("initUI");
     // Auth
     document.getElementById("btnSignIn").addEventListener("click", async () => { try { await signIn(); } catch(_){} });
-    document.getElementById("btnSignOut").addEventListener("click", signOut);
+    document.getElementById("btnSignOut").addEventListener("click", async () => { await signOut(); });
     // Onboarding
     document.getElementById("btnDismissOnboarding").addEventListener("click", dismissOnboarding);
     // Step 1
