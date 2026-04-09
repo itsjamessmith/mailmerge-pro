@@ -13,10 +13,14 @@ let appState = {
 
 // Initialize Office.js
 Office.onReady(function (info) {
-    if (info.host === Office.HostType.Outlook) {
-        initUI();
-    }
+    console.log("Office.onReady:", info.host, info.platform);
+    initUI();
 });
+
+// Fallback if Office.js doesn't load (for testing outside Outlook)
+if (typeof Office === "undefined") {
+    document.addEventListener("DOMContentLoaded", initUI);
+}
 
 // ========== UI Initialization ==========
 
@@ -237,23 +241,24 @@ function mergeFields(template, row) {
 // ========== Email Sending via EWS ==========
 
 async function executeMerge() {
-    const subject = document.getElementById("emailSubject").value;
-    const body = document.getElementById("emailBody").value;
-    const globalCC = document.getElementById("globalCC").value.trim();
-    const globalBCC = document.getElementById("globalBCC").value.trim();
-    const sendAsHtml = document.getElementById("chkSendAsHtml").checked;
-    const draftOnly = document.getElementById("chkDraftOnly").checked;
-    const delay = parseInt(document.getElementById("sendDelay").value) || 1;
+    try {
+        const subject = document.getElementById("emailSubject").value;
+        const body = document.getElementById("emailBody").value;
+        const globalCC = document.getElementById("globalCC").value.trim();
+        const globalBCC = document.getElementById("globalBCC").value.trim();
+        const sendAsHtml = document.getElementById("chkSendAsHtml").checked;
+        const draftOnly = document.getElementById("chkDraftOnly").checked;
+        const delay = parseInt(document.getElementById("sendDelay").value) || 1;
 
-    if (!subject && !appState.mapping.subject) {
-        alert("Please enter a subject line."); return;
-    }
-    if (!body) {
-        alert("Please enter an email body."); return;
-    }
+        if (!subject && !appState.mapping.subject) {
+            alert("Please enter a subject line."); return;
+        }
+        if (!body) {
+            alert("Please enter an email body."); return;
+        }
 
-    const total = appState.rows.length;
-    if (!confirm(`Ready to ${draftOnly ? "save to Drafts" : "send"} ${total} emails. Continue?`)) return;
+        const total = appState.rows.length;
+        if (!confirm(`Ready to ${draftOnly ? "save to Drafts" : "send"} ${total} emails. Continue?`)) return;
 
     // Show progress
     document.getElementById("progressContainer").style.display = "block";
@@ -323,28 +328,38 @@ async function executeMerge() {
 
     document.getElementById("btnSend").disabled = false;
     document.getElementById("btnStep4Back").disabled = false;
+
+    } catch (outerErr) {
+        alert("Mail merge error: " + (outerErr.message || String(outerErr)));
+        document.getElementById("btnSend").disabled = false;
+        document.getElementById("btnStep4Back").disabled = false;
+        document.getElementById("progressContainer").style.display = "none";
+    }
 }
 
-// Create email using Office.js displayNewMessageFormAsync (for drafts/preview)
+// Create email using Office.js displayNewMessageForm
 function createDraft(to, cc, bcc, subject, body, asHtml) {
     return new Promise((resolve, reject) => {
         try {
-            const options = {
+            const mailBody = asHtml ? body.replace(/\n/g, "<br/>") : body;
+            const formData = {
                 toRecipients: to.split(/[;,]/).map(e => e.trim()).filter(Boolean),
-                ccRecipients: cc ? cc.split(/[;,]/).map(e => e.trim()).filter(Boolean) : [],
-                bccRecipients: bcc ? bcc.split(/[;,]/).map(e => e.trim()).filter(Boolean) : [],
-                subject: subject,
-                htmlBody: asHtml ? body.replace(/\n/g, "<br/>") : undefined,
+                subject: subject
             };
 
-            // displayNewMessageFormAsync opens a compose window (user can review & send)
-            Office.context.mailbox.displayNewMessageFormAsync(options, function (result) {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    resolve();
-                } else {
-                    reject(new Error(result.error.message || "Failed to create draft"));
-                }
-            });
+            if (cc) formData.ccRecipients = cc.split(/[;,]/).map(e => e.trim()).filter(Boolean);
+            if (bcc) formData.bccRecipients = bcc.split(/[;,]/).map(e => e.trim()).filter(Boolean);
+            if (asHtml) {
+                formData.htmlBody = mailBody;
+            } else {
+                formData.htmlBody = "<pre>" + escapeHtml(body) + "</pre>";
+            }
+
+            // displayNewMessageForm is fire-and-forget (opens compose window)
+            Office.context.mailbox.displayNewMessageForm(formData);
+
+            // Small delay to let Outlook open the compose window
+            setTimeout(resolve, 500);
         } catch (err) {
             reject(err);
         }
@@ -354,6 +369,27 @@ function createDraft(to, cc, bcc, subject, body, asHtml) {
 // Send email using EWS (Exchange Web Services) via makeEwsRequestAsync
 function sendViaEWS(to, cc, bcc, subject, body, asHtml) {
     return new Promise((resolve, reject) => {
+        // Check if makeEwsRequestAsync is available
+        if (!Office.context.mailbox.makeEwsRequestAsync) {
+            // Fallback: use displayNewMessageForm instead
+            try {
+                const mailBody = asHtml ? body.replace(/\n/g, "<br/>") : body;
+                const formData = {
+                    toRecipients: to.split(/[;,]/).map(e => e.trim()).filter(Boolean),
+                    subject: subject
+                };
+                if (cc) formData.ccRecipients = cc.split(/[;,]/).map(e => e.trim()).filter(Boolean);
+                if (bcc) formData.bccRecipients = bcc.split(/[;,]/).map(e => e.trim()).filter(Boolean);
+                formData.htmlBody = asHtml ? mailBody : "<pre>" + escapeHtml(body) + "</pre>";
+
+                Office.context.mailbox.displayNewMessageForm(formData);
+                setTimeout(resolve, 500);
+            } catch (err) {
+                reject(err);
+            }
+            return;
+        }
+
         const bodyType = asHtml ? "HTML" : "Text";
         const htmlBody = asHtml ? body.replace(/\n/g, "<br/>") : body;
 
