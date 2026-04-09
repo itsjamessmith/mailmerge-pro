@@ -63,6 +63,16 @@ async function initMsal() {
     const btnSignIn = document.getElementById("btnSignIn");
     const btnSignOut = document.getElementById("btnSignOut");
 
+    // Check if msal library loaded
+    if (typeof msal === "undefined" || !msal.PublicClientApplication) {
+        console.error("MSAL library not loaded");
+        authStatusEl.textContent = "Auth library not loaded. Please refresh.";
+        authStatusEl.classList.add("error");
+        btnSignIn.style.display = "inline-block";
+        btnSignOut.style.display = "none";
+        return;
+    }
+
     try {
         msalInstance = new msal.PublicClientApplication(msalConfig);
         await msalInstance.initialize();
@@ -121,6 +131,23 @@ function updateAuthUI(account) {
 async function signIn() {
     console.log("signIn: starting interactive login");
     const authStatusEl = document.getElementById("authStatus");
+
+    // If MSAL didn't initialize, try again now
+    if (!msalInstance) {
+        console.log("signIn: msalInstance is null, re-initializing...");
+        try {
+            msalInstance = new msal.PublicClientApplication(msalConfig);
+            await msalInstance.initialize();
+            await msalInstance.handleRedirectPromise().catch(() => {});
+            console.log("signIn: MSAL re-initialized successfully");
+        } catch (initErr) {
+            console.error("signIn: MSAL re-init failed:", initErr);
+            authStatusEl.textContent = "Auth failed: " + (initErr.message || String(initErr));
+            authStatusEl.classList.add("error");
+            return;
+        }
+    }
+
     try {
         const result = await msalInstance.acquireTokenPopup(loginRequest);
         console.log("signIn success:", result.account.username);
@@ -151,7 +178,12 @@ function signOut() {
 }
 
 async function getGraphToken() {
-    if (!msalInstance) throw new Error("MSAL not initialized. Please refresh the page.");
+    if (!msalInstance) {
+        console.log("getGraphToken: msalInstance is null, initializing...");
+        msalInstance = new msal.PublicClientApplication(msalConfig);
+        await msalInstance.initialize();
+        await msalInstance.handleRedirectPromise().catch(() => {});
+    }
 
     const accounts = msalInstance.getAllAccounts();
     if (accounts.length > 0) {
