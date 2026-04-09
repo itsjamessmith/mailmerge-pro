@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MailMerge-Pro</title>
+    <link rel="stylesheet" href="taskpane.css"/>
+    <!-- Office.js library -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <!-- SheetJS for reading Excel files client-side -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>📧 MailMerge-Pro</h1>
+            <p class="subtitle">Personalized bulk email from Outlook</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="steps-indicator">
+            <span class="step active" data-step="1">1. Data</span>
+            <span class="step" data-step="2">2. Map</span>
+            <span class="step" data-step="3">3. Compose</span>
+            <span class="step" data-step="4">4. Send</span>
+        </div>
+
+        <!-- Step 1: Upload Data -->
+        <div id="step1" class="step-content active">
+            <h2>Upload Recipient Data</h2>
+            <p>Select an Excel (.xlsx) or CSV file with your recipients.</p>
+            <div class="file-upload">
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" />
+                <label for="fileInput" class="btn btn-primary">Choose File</label>
+                <span id="fileName" class="file-name">No file selected</span>
+            </div>
+            <div id="dataPreview" class="data-preview" style="display:none;">
+                <p id="dataStats" class="stats"></p>
+                <div id="previewTable" class="table-wrapper"></div>
+            </div>
+            <button id="btnStep1Next" class="btn btn-primary btn-next" disabled>Next →</button>
+        </div>
+
+        <!-- Step 2: Map Columns -->
+        <div id="step2" class="step-content">
+            <h2>Map Columns</h2>
+            <p>Match your spreadsheet columns to email fields.</p>
+            <div class="form-group">
+                <label>To (Email) <span class="required">*</span></label>
+                <select id="mapTo" class="select"></select>
+            </div>
+            <div class="form-group">
+                <label>CC <span class="optional">(optional)</span></label>
+                <select id="mapCC" class="select"></select>
+            </div>
+            <div class="form-group">
+                <label>BCC <span class="optional">(optional)</span></label>
+                <select id="mapBCC" class="select"></select>
+            </div>
+            <div class="form-group">
+                <label>Subject <span class="optional">(optional per-row)</span></label>
+                <select id="mapSubject" class="select"></select>
+            </div>
+            <div class="form-row">
+                <button id="btnStep2Back" class="btn btn-secondary">← Back</button>
+                <button id="btnStep2Next" class="btn btn-primary">Next →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Compose Email -->
+        <div id="step3" class="step-content">
+            <h2>Compose Email</h2>
+            <div class="form-group">
+                <label>Subject Line</label>
+                <input type="text" id="emailSubject" class="input" placeholder="e.g. Hello {FirstName}, check this out!" />
+                <small>Use {ColumnName} for personalization</small>
+            </div>
+            <div class="form-group">
+                <label>Global CC <span class="optional">(all emails)</span></label>
+                <input type="text" id="globalCC" class="input" placeholder="e.g. manager@company.com" />
+            </div>
+            <div class="form-group">
+                <label>Global BCC <span class="optional">(all emails)</span></label>
+                <input type="text" id="globalBCC" class="input" placeholder="e.g. audit@company.com" />
+            </div>
+            <div class="form-group">
+                <label>Email Body</label>
+                <div id="mergeFieldBtns" class="merge-field-btns"></div>
+                <textarea id="emailBody" class="textarea" rows="10" placeholder="Type your email body here. Use {ColumnName} to insert personalized data.
+
+Example:
+Dear {FirstName},
+
+We are excited to share our latest update with you!
+
+Best regards,
+The Team"></textarea>
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" id="chkSendAsHtml" checked /> Send as HTML</label>
+            </div>
+            <div class="form-row">
+                <button id="btnStep3Back" class="btn btn-secondary">← Back</button>
+                <button id="btnStep3Next" class="btn btn-primary">Next →</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Review & Send -->
+        <div id="step4" class="step-content">
+            <h2>Review & Send</h2>
+            <div id="reviewSummary" class="review-summary"></div>
+            <div id="previewEmail" class="email-preview"></div>
+            <div class="form-group">
+                <label>Delay between emails (seconds)</label>
+                <input type="number" id="sendDelay" class="input input-small" value="1" min="0" max="30" />
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="chkDraftOnly" />
+                    <strong>Preview only</strong> — save to Drafts (don't send)
+                </label>
+            </div>
+            <div class="form-row">
+                <button id="btnStep4Back" class="btn btn-secondary">← Back</button>
+                <button id="btnSend" class="btn btn-send">🚀 Send All Emails</button>
+            </div>
+            <div id="progressContainer" class="progress-container" style="display:none;">
+                <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+                <p id="progressText" class="progress-text">Sending...</p>
+            </div>
+            <div id="resultsContainer" class="results" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script src="taskpane.js"></script>
+</body>
+</html>
