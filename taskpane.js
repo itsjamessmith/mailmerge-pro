@@ -412,7 +412,13 @@ async function signIn() {
         }
     }
     try {
-        // Clear stuck interaction state before attempting new login
+        // Proactively clear any stuck MSAL interaction state from prior failed popups
+        try {
+            const keys = Object.keys(sessionStorage);
+            keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
+        } catch (_) {}
+
+        // Try silent token first if there's an active account
         const activeAccount = msalInstance.getActiveAccount();
         if (activeAccount) {
             try {
@@ -427,13 +433,13 @@ async function signIn() {
         return result.accessToken;
     } catch (err) {
         console.error("signIn error:", err);
+        // Clear stuck interaction state on any error for next attempt
+        try {
+            const keys = Object.keys(sessionStorage);
+            keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
+        } catch (_) {}
         const msg = err.message || String(err);
         if (msg.includes("interaction_in_progress")) {
-            // Clear stuck MSAL interaction state
-            try {
-                const keys = Object.keys(sessionStorage);
-                keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
-            } catch (_) {}
             authEl.textContent = t("signIn") + " — " + t("error") + ". Please try again.";
         } else if (msg.includes("popup_window_error")) {
             authEl.textContent = "Pop-up blocked. Allow pop-ups and try again.";
