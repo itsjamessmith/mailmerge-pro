@@ -65,7 +65,8 @@ const translations = {
         selectToColumn:"⚠️ Select the To (Email) column.", authFailed:"❌ Authentication failed",
         sendComplete:"Mail Merge Complete", error:"Error", sent:"Sent", draft:"Draft",
         dragDropHtml:"Drop .html file here or click Import HTML",
-        htmlImported:"HTML template imported!", scheduledFor:"Scheduled for", sending:"Sending"
+        htmlImported:"HTML template imported!", scheduledFor:"Scheduled for", sending:"Sending",
+        notSignedIn:"Not signed in"
     },
     es: {
         appTitle:"📧 MailMerge-Pro", stepData:"Datos", stepMap:"Mapear", stepCompose:"Redactar", stepSend:"Enviar",
@@ -98,7 +99,12 @@ const translations = {
         signOut:"Cerrar Sesión", getStarted:"Comenzar", cancel:"Cancelar", save:"Guardar",
         merge:"Fusionar", close:"Cerrar", sent:"Enviado", draft:"Borrador", error:"Error",
         sendComplete:"Combinación Completa", dragDropHtml:"Arrastre .html aquí",
-        htmlImported:"¡Plantilla importada!", sending:"Enviando"
+        htmlImported:"¡Plantilla importada!", sending:"Enviando", notSignedIn:"No conectado",
+        history:"📜 Historial", searchRecipients:"🔍 Buscar destinatarios...",
+        noFileSelected:"Ningún archivo seleccionado", orDivider:"— o —",
+        authFailed:"❌ Error de autenticación", noRecipients:"Sin destinatarios.",
+        enterSubject:"⚠️ Introduzca un asunto.", enterBody:"⚠️ Introduzca un cuerpo.",
+        uploadFirst:"⚠️ Suba un archivo primero.", selectToColumn:"⚠️ Seleccione la columna Para (Email)."
     },
     fr: {
         appTitle:"📧 MailMerge-Pro", stepData:"Données", stepMap:"Mapper", stepCompose:"Composer", stepSend:"Envoyer",
@@ -127,7 +133,7 @@ const translations = {
         closeDashboard:"Fermer", signIn:"Connexion", signOut:"Déconnexion",
         getStarted:"Commencer", cancel:"Annuler", save:"Sauver", merge:"Fusionner",
         close:"Fermer", sent:"Envoyé", draft:"Brouillon", error:"Erreur",
-        sendComplete:"Fusion Terminée", sending:"Envoi"
+        sendComplete:"Fusion Terminée", sending:"Envoi", notSignedIn:"Non connecté"
     },
     de: {
         appTitle:"📧 MailMerge-Pro", stepData:"Daten", stepMap:"Zuordnen", stepCompose:"Verfassen", stepSend:"Senden",
@@ -156,7 +162,7 @@ const translations = {
         closeDashboard:"Schließen", signIn:"Anmelden", signOut:"Abmelden",
         getStarted:"Loslegen", cancel:"Abbrechen", save:"Speichern", merge:"Zusammenführen",
         close:"Schließen", sent:"Gesendet", draft:"Entwurf", error:"Fehler",
-        sendComplete:"Zusammenführung Abgeschlossen", sending:"Senden"
+        sendComplete:"Zusammenführung Abgeschlossen", sending:"Senden", notSignedIn:"Nicht angemeldet"
     },
     pt: {
         appTitle:"📧 MailMerge-Pro", stepData:"Dados", stepMap:"Mapear", stepCompose:"Compor", stepSend:"Enviar",
@@ -185,7 +191,7 @@ const translations = {
         closeDashboard:"Fechar", signIn:"Entrar", signOut:"Sair",
         getStarted:"Começar", cancel:"Cancelar", save:"Salvar", merge:"Mesclar",
         close:"Fechar", sent:"Enviado", draft:"Rascunho", error:"Erro",
-        sendComplete:"Mesclagem Concluída", sending:"Enviando"
+        sendComplete:"Mesclagem Concluída", sending:"Enviando", notSignedIn:"Não conectado"
     },
     ja: {
         appTitle:"📧 MailMerge-Pro", stepData:"データ", stepMap:"マップ", stepCompose:"作成", stepSend:"送信",
@@ -215,7 +221,7 @@ const translations = {
         closeDashboard:"閉じる", signIn:"サインイン", signOut:"サインアウト",
         getStarted:"始める", cancel:"キャンセル", save:"保存", merge:"結合",
         close:"閉じる", sent:"送信済", draft:"下書き", error:"エラー",
-        sendComplete:"メール結合完了", sending:"送信中"
+        sendComplete:"メール結合完了", sending:"送信中", notSignedIn:"未サインイン"
     }
 };
 
@@ -241,7 +247,7 @@ function applyTranslations() {
 const msalConfig = {
     auth: {
         clientId: "360e4343-614f-4f70-a650-c020868516fc",
-        authority: "https://login.microsoftonline.com/e67c588e-f654-4727-b794-1ca5df7b6ee9",
+        authority: "https://login.microsoftonline.com/common",
         redirectUri: "https://itsjamessmith.github.io/mailmerge-pro/taskpane.html"
     },
     cache: { cacheLocation: "localStorage" }
@@ -262,6 +268,7 @@ const appState = {
     results: [],
     sending: false,
     userEmail: "",
+    fileName: "",
     previewIndex: 0,
     contactsData: [],
     abTestEnabled: false,
@@ -292,6 +299,11 @@ if (typeof Office === "undefined") {
 
 // ========== Dark Mode Detection ==========
 function detectDarkMode(officeInfo) {
+    // Restore saved preference first
+    const savedPref = localStorage.getItem("mailmergepro_darkmode");
+    if (savedPref === "true") { document.body.classList.add("dark-mode"); return; }
+    if (savedPref === "false") { return; }
+    // Auto-detect from OS or Office theme
     const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
     if (prefersDark) document.body.classList.add("dark-mode");
     try {
@@ -300,6 +312,13 @@ function detectDarkMode(officeInfo) {
             if (bg && isColorDark(bg)) document.body.classList.add("dark-mode");
         }
     } catch (e) { console.log("Theme detection skipped:", e.message); }
+}
+function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("mailmergepro_darkmode", String(isDark));
+    const btn = document.getElementById("darkModeToggle");
+    if (btn) btn.textContent = isDark ? "☀️" : "🌙";
 }
 function isColorDark(hex) {
     hex = hex.replace("#", "");
@@ -346,7 +365,7 @@ async function initMsal() {
             console.log("Already signed in:", accounts[0].username);
             updateAuthUI(accounts[0]);
         } else {
-            authEl.textContent = "Not signed in";
+            authEl.textContent = t("notSignedIn");
             btnIn.style.display = "inline-block";
             btnOut.style.display = "none";
         }
@@ -370,7 +389,7 @@ function updateAuthUI(account) {
         btnOut.style.display = "inline-block";
         appState.userEmail = account.username;
     } else {
-        authEl.textContent = "Not signed in";
+        authEl.textContent = t("notSignedIn");
         authEl.classList.remove("signed-in");
         btnIn.style.display = "inline-block";
         btnOut.style.display = "none";
@@ -387,24 +406,43 @@ async function signIn() {
             await msalInstance.initialize();
             await msalInstance.handleRedirectPromise().catch(() => {});
         } catch (e) {
-            authEl.textContent = "Auth failed: " + (e.message || String(e));
+            authEl.textContent = t("authFailed") + ": " + (e.message || String(e));
             authEl.classList.add("error");
             return;
         }
     }
     try {
+        // Clear stuck interaction state before attempting new login
+        const activeAccount = msalInstance.getActiveAccount();
+        if (activeAccount) {
+            try {
+                const result = await msalInstance.acquireTokenSilent({ ...loginRequest, account: activeAccount });
+                updateAuthUI(activeAccount);
+                return result.accessToken;
+            } catch (_) { /* silent failed, proceed to popup */ }
+        }
         const result = await msalInstance.acquireTokenPopup(loginRequest);
         console.log("signIn success:", result.account.username);
         updateAuthUI(result.account);
         return result.accessToken;
     } catch (err) {
         console.error("signIn error:", err);
-        if (err.message && err.message.includes("popup_window_error")) {
+        const msg = err.message || String(err);
+        if (msg.includes("interaction_in_progress")) {
+            // Clear stuck MSAL interaction state
+            try {
+                const keys = Object.keys(sessionStorage);
+                keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
+            } catch (_) {}
+            authEl.textContent = t("signIn") + " — " + t("error") + ". Please try again.";
+        } else if (msg.includes("popup_window_error")) {
             authEl.textContent = "Pop-up blocked. Allow pop-ups and try again.";
-        } else if (err.message && err.message.includes("user_cancelled")) {
+        } else if (msg.includes("user_cancelled")) {
             authEl.textContent = "Sign-in cancelled.";
+        } else if (msg.includes("AADSTS50020") || msg.includes("AADSTS700016")) {
+            authEl.textContent = "Account not authorized for this app. Check your tenant.";
         } else {
-            authEl.textContent = "Sign-in failed: " + (err.message || String(err));
+            authEl.textContent = t("authFailed") + ": " + msg.substring(0, 120);
         }
         authEl.classList.add("error");
         throw err;
@@ -797,6 +835,7 @@ function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     document.getElementById("fileName").textContent = file.name;
+    appState.fileName = file.name;
     console.log("handleFileUpload:", file.name, file.size);
     const reader = new FileReader();
     reader.onload = function (evt) {

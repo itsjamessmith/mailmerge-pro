@@ -124,6 +124,7 @@
         <div class="header">
             <h1>&#x1F4E7; MailMerge-Pro</h1>
             <div class="header-actions">
+                <button id="darkModeToggle" class="btn-icon dark-toggle" onclick="toggleDarkMode()" title="Toggle dark mode">&#x1F319;</button>
                 <div class="lang-selector">
                     <span>&#x1F310;</span>
                     <select id="languageSelect">
@@ -148,33 +149,33 @@
         <!-- Auth bar -->
         <div id="authBar" class="auth-bar">
             <span id="authStatus" class="auth-status">Initializing&#x2026;</span>
-            <button id="btnSignIn" class="btn btn-primary btn-small" style="display:none;">Sign In</button>
-            <button id="btnSignOut" class="btn btn-secondary btn-small" style="display:none;">Sign Out</button>
+            <button id="btnSignIn" class="btn btn-primary btn-small" style="display:none;" data-i18n="signIn">Sign In</button>
+            <button id="btnSignOut" class="btn btn-secondary btn-small" style="display:none;" data-i18n="signOut">Sign Out</button>
         </div>
 
         <!-- Step indicator -->
         <div class="steps-indicator">
             <div class="step-item active" data-step="1">
                 <div class="step-circle"><span class="step-num">1</span><span class="step-check">&#x2713;</span></div>
-                <span class="step-label">Data</span>
+                <span class="step-label" data-i18n="stepData">Data</span>
                 <span class="step-badge" id="badge1"></span>
             </div>
             <div class="step-connector"></div>
             <div class="step-item" data-step="2">
                 <div class="step-circle"><span class="step-num">2</span><span class="step-check">&#x2713;</span></div>
-                <span class="step-label">Map</span>
+                <span class="step-label" data-i18n="stepMap">Map</span>
                 <span class="step-badge" id="badge2"></span>
             </div>
             <div class="step-connector"></div>
             <div class="step-item" data-step="3">
                 <div class="step-circle"><span class="step-num">3</span><span class="step-check">&#x2713;</span></div>
-                <span class="step-label">Compose</span>
+                <span class="step-label" data-i18n="stepCompose">Compose</span>
                 <span class="step-badge" id="badge3"></span>
             </div>
             <div class="step-connector"></div>
             <div class="step-item" data-step="4">
                 <div class="step-circle"><span class="step-num">4</span><span class="step-check">&#x2713;</span></div>
-                <span class="step-label">Send</span>
+                <span class="step-label" data-i18n="stepSend">Send</span>
                 <span class="step-badge" id="badge4"></span>
             </div>
         </div>
@@ -182,15 +183,15 @@
         <!-- Step 1: Upload Data -->
         <div id="step1" class="step-content active">
             <div class="card">
-                <h2>&#x1F4CB; Upload Recipient Data</h2>
-                <p>Select an Excel (.xlsx) or CSV file with your recipients.</p>
+                <h2 data-i18n="uploadTitle">&#x1F4CB; Upload Recipient Data</h2>
+                <p data-i18n="uploadDesc">Select an Excel (.xlsx) or CSV file with your recipients.</p>
                 <div class="file-upload">
                     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/>
-                    <label for="fileInput" class="btn btn-primary">&#x1F4C1; Choose File</label>
-                    <span id="fileName" class="file-name">No file selected</span>
+                    <label for="fileInput" class="btn btn-primary" data-i18n="chooseFile">&#x1F4C1; Choose File</label>
+                    <span id="fileName" class="file-name" data-i18n="noFileSelected">No file selected</span>
                 </div>
-                <div class="divider-text">&#x2014; or &#x2014;</div>
-                <button id="btnImportContacts" class="btn btn-secondary btn-block">&#x1F464; Import from Contacts</button>
+                <div class="divider-text" data-i18n="orDivider">&#x2014; or &#x2014;</div>
+                <button id="btnImportContacts" class="btn btn-secondary btn-block" data-i18n="importContacts">&#x1F464; Import from Contacts</button>
             </div>
             <div id="contactsPanel" class="card" style="display:none;">
                 <h3>&#x1F464; Select Contacts</h3>
