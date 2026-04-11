@@ -24,6 +24,35 @@ function sanitizeHtml(html) {
     return tmp.innerHTML;
 }
 
+// ========== Focus Trap Utility (A2) ==========
+let _focusTrapCleanup = null;
+function trapFocus(modal) {
+    const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    function handleKeydown(e) {
+        if (e.key === 'Escape') {
+            modal.style.display = 'none';
+            releaseFocus();
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    }
+
+    modal.addEventListener('keydown', handleKeydown);
+    _focusTrapCleanup = () => modal.removeEventListener('keydown', handleKeydown);
+    if (first) first.focus();
+}
+function releaseFocus() {
+    if (_focusTrapCleanup) { _focusTrapCleanup(); _focusTrapCleanup = null; }
+}
+
 // ========== Rate Limiting Engine ==========
 const rateLimiter = {
     maxPerMinute: 30,
@@ -202,7 +231,17 @@ const translations = {
         unsubscribePlaceholder:"unsubscribe@company.com",
         testBtn:"🧪 Test",
         sendAllBtn:"🚀 Send All Emails",
-        sendShortcutHint:"Ctrl+Enter to send"},
+        sendShortcutHint:"Ctrl+Enter to send",
+        conditionalHint:'Conditional: {{#if Column}}...{{/if}}, {{#ifEquals Column "value"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 Suppression List",
+        suppressionDesc:"Emails in this list will be automatically skipped during send.",
+        suppressionPlaceholder:"Add email to blocklist...",
+        addToBlocklist:"+ Add",
+        clearBlocklist:"Clear All",
+        noBlockedEmails:"No blocked emails",
+        validationTitle:"⚠️ Validation Issues",
+        sendAnywayBtn:"Send Anyway",
+        tooltipInsertImage:"Insert Image"},
     es: {
         appTitle:"📧 MailMerge-Pro", stepData:"Datos", stepMap:"Mapear", stepCompose:"Redactar", stepSend:"Enviar",
         uploadTitle:"📋 Subir Datos", uploadDesc:"Seleccione un archivo Excel (.xlsx) o CSV.",
@@ -327,6 +366,16 @@ const translations = {
         testBtn:"🧪 Prueba",
         sendAllBtn:"🚀 Enviar Todos",
         sendShortcutHint:"Ctrl+Enter para enviar",
+        conditionalHint:'Condicional: {{#if Columna}}...{{/if}}, {{#ifEquals Columna "valor"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 Lista de Supresión",
+        suppressionDesc:"Los correos en esta lista se omitirán automáticamente durante el envío.",
+        suppressionPlaceholder:"Agregar email a lista de bloqueo...",
+        addToBlocklist:"+ Agregar",
+        clearBlocklist:"Borrar Todo",
+        noBlockedEmails:"Sin correos bloqueados",
+        validationTitle:"⚠️ Problemas de Validación",
+        sendAnywayBtn:"Enviar de Todas Formas",
+        tooltipInsertImage:"Insertar Imagen",
         templateNamePlaceholder:"Ingrese nombre de plantilla...",
         listNamePlaceholder:"Ingrese nombre de lista...",
         templateNamePrompt:"Nombre de Plantilla",
@@ -447,6 +496,16 @@ const translations = {
         testBtn:"🧪 Test",
         sendAllBtn:"🚀 Tout Envoyer",
         sendShortcutHint:"Ctrl+Entrée pour envoyer",
+        conditionalHint:'Conditionnel : {{#if Colonne}}...{{/if}}, {{#ifEquals Colonne "valeur"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 Liste de Suppression",
+        suppressionDesc:"Les emails de cette liste seront automatiquement ignorés lors de l'envoi.",
+        suppressionPlaceholder:"Ajouter un email à la liste noire...",
+        addToBlocklist:"+ Ajouter",
+        clearBlocklist:"Tout Effacer",
+        noBlockedEmails:"Aucun email bloqué",
+        validationTitle:"⚠️ Problèmes de Validation",
+        sendAnywayBtn:"Envoyer Quand Même",
+        tooltipInsertImage:"Insérer une Image",
         templateNamePlaceholder:"Entrez le nom du modèle...",
         listNamePlaceholder:"Entrez le nom de la liste...",
         templateNamePrompt:"Nom du Modèle",
@@ -573,6 +632,16 @@ const translations = {
         testBtn:"🧪 Test",
         sendAllBtn:"🚀 Alle Senden",
         sendShortcutHint:"Strg+Enter zum Senden",
+        conditionalHint:'Bedingt: {{#if Spalte}}...{{/if}}, {{#ifEquals Spalte "Wert"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 Unterdrückungsliste",
+        suppressionDesc:"E-Mails in dieser Liste werden beim Senden automatisch übersprungen.",
+        suppressionPlaceholder:"E-Mail zur Sperrliste hinzufügen...",
+        addToBlocklist:"+ Hinzufügen",
+        clearBlocklist:"Alle Löschen",
+        noBlockedEmails:"Keine blockierten E-Mails",
+        validationTitle:"⚠️ Validierungsprobleme",
+        sendAnywayBtn:"Trotzdem Senden",
+        tooltipInsertImage:"Bild Einfügen",
         templateNamePlaceholder:"Vorlagenname eingeben...",
         listNamePlaceholder:"Listennname eingeben...",
         templateNamePrompt:"Vorlagenname",
@@ -699,6 +768,16 @@ const translations = {
         testBtn:"🧪 Teste",
         sendAllBtn:"🚀 Enviar Todos",
         sendShortcutHint:"Ctrl+Enter para enviar",
+        conditionalHint:'Condicional: {{#if Coluna}}...{{/if}}, {{#ifEquals Coluna "valor"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 Lista de Supressão",
+        suppressionDesc:"Emails nesta lista serão automaticamente ignorados durante o envio.",
+        suppressionPlaceholder:"Adicionar email à lista de bloqueio...",
+        addToBlocklist:"+ Adicionar",
+        clearBlocklist:"Limpar Tudo",
+        noBlockedEmails:"Nenhum email bloqueado",
+        validationTitle:"⚠️ Problemas de Validação",
+        sendAnywayBtn:"Enviar Mesmo Assim",
+        tooltipInsertImage:"Inserir Imagem",
         templateNamePlaceholder:"Digite o nome do modelo...",
         listNamePlaceholder:"Digite o nome da lista...",
         templateNamePrompt:"Nome do Modelo",
@@ -826,6 +905,16 @@ const translations = {
         testBtn:"🧪 テスト",
         sendAllBtn:"🚀 全て送信",
         sendShortcutHint:"Ctrl+Enterで送信",
+        conditionalHint:'条件付き: {{#if 列名}}...{{/if}}, {{#ifEquals 列名 "値"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 抑制リスト",
+        suppressionDesc:"このリストのメールアドレスは送信時に自動的にスキップされます。",
+        suppressionPlaceholder:"ブロックリストにメールを追加...",
+        addToBlocklist:"+ 追加",
+        clearBlocklist:"すべてクリア",
+        noBlockedEmails:"ブロックされたメールはありません",
+        validationTitle:"⚠️ バリデーション問題",
+        sendAnywayBtn:"それでも送信",
+        tooltipInsertImage:"画像を挿入",
         templateNamePlaceholder:"テンプレート名を入力...",
         listNamePlaceholder:"リスト名を入力...",
         templateNamePrompt:"テンプレート名",
@@ -1054,7 +1143,17 @@ const translations = {
         unsubscribePlaceholder:"unsubscribe@company.com",
         testBtn:"🧪 测试",
         sendAllBtn:"🚀 发送所有邮件",
-        sendShortcutHint:"Ctrl+Enter 发送"
+        sendShortcutHint:"Ctrl+Enter 发送",
+        conditionalHint:'条件内容: {{#if 列名}}...{{/if}}, {{#ifEquals 列名 "值"}}...{{/ifEquals}}',
+        suppressionTitle:"🚫 抑制列表",
+        suppressionDesc:"此列表中的邮件在发送时将自动跳过。",
+        suppressionPlaceholder:"添加邮箱到黑名单...",
+        addToBlocklist:"+ 添加",
+        clearBlocklist:"清除全部",
+        noBlockedEmails:"没有被屏蔽的邮箱",
+        validationTitle:"⚠️ 验证问题",
+        sendAnywayBtn:"仍然发送",
+        tooltipInsertImage:"插入图片"
     }
 };
 
@@ -1409,7 +1508,7 @@ function initUI() {
         document.execCommand("foreColor", false, e.target.value);
     });
     // Link dialog
-    document.getElementById("btnLinkCancel").addEventListener("click", () => { document.getElementById("linkDialog").style.display = "none"; });
+    document.getElementById("btnLinkCancel").addEventListener("click", () => { document.getElementById("linkDialog").style.display = "none"; releaseFocus(); });
     document.getElementById("btnLinkInsert").addEventListener("click", insertLink);
     document.getElementById("linkUrlInput").addEventListener("keydown", (e) => { if (e.key === "Enter") insertLink(); });
     // Unsubscribe toggle
@@ -1425,6 +1524,7 @@ function initUI() {
     document.getElementById("pastCampaigns").addEventListener("change", showCampaignDetails);
     document.getElementById("btnCloseCampaignDetail").addEventListener("click", () => {
         document.getElementById("campaignDetailModal").style.display = "none";
+        releaseFocus();
     });
     // Keyboard shortcut: Ctrl+Enter to send
     document.addEventListener("keydown", (e) => {
@@ -1450,7 +1550,7 @@ function initUI() {
     // Feature 1: Templates
     document.getElementById("templatesHeader").addEventListener("click", () => toggleCollapsible("templatesHeader", "templatesBody"));
     document.getElementById("btnSaveTemplate").addEventListener("click", showSaveTemplateDialog);
-    document.getElementById("btnTemplateNameCancel").addEventListener("click", () => { document.getElementById("templateNameDialog").style.display = "none"; });
+    document.getElementById("btnTemplateNameCancel").addEventListener("click", () => { document.getElementById("templateNameDialog").style.display = "none"; releaseFocus(); });
     document.getElementById("btnTemplateNameSave").addEventListener("click", saveCurrentTemplate);
     document.getElementById("templateNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveCurrentTemplate(); });
     loadTemplatesUI();
@@ -1459,10 +1559,10 @@ function initUI() {
     document.getElementById("savedListsHeader").addEventListener("click", () => toggleCollapsible("savedListsHeader", "savedListsBody"));
     document.getElementById("btnSaveCurrentList").addEventListener("click", showSaveListDialog);
     document.getElementById("btnMergeLists").addEventListener("click", showMergeListDialog);
-    document.getElementById("btnListNameCancel").addEventListener("click", () => { document.getElementById("listNameDialog").style.display = "none"; });
+    document.getElementById("btnListNameCancel").addEventListener("click", () => { document.getElementById("listNameDialog").style.display = "none"; releaseFocus(); });
     document.getElementById("btnListNameSave").addEventListener("click", saveCurrentList);
     document.getElementById("listNameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") saveCurrentList(); });
-    document.getElementById("btnMergeListCancel").addEventListener("click", () => { document.getElementById("mergeListDialog").style.display = "none"; });
+    document.getElementById("btnMergeListCancel").addEventListener("click", () => { document.getElementById("mergeListDialog").style.display = "none"; releaseFocus(); });
     document.getElementById("btnMergeListConfirm").addEventListener("click", mergeSelectedList);
     loadSavedListsUI();
 
@@ -1482,7 +1582,7 @@ function initUI() {
     document.getElementById("btnInsertSignature").addEventListener("click", showSignatureDialog);
     document.getElementById("btnManageSignature").addEventListener("click", showSignatureDialog);
     document.getElementById("btnFetchSignature").addEventListener("click", fetchOutlookSignature);
-    document.getElementById("btnSignatureCancel").addEventListener("click", () => { document.getElementById("signatureDialog").style.display = "none"; });
+    document.getElementById("btnSignatureCancel").addEventListener("click", () => { document.getElementById("signatureDialog").style.display = "none"; releaseFocus(); });
     document.getElementById("btnSignatureSave").addEventListener("click", saveSignature);
     document.getElementById("chkAutoSignatureInline").checked = appState.autoSignature;
     document.getElementById("chkAutoSignatureInline").addEventListener("change", (e) => {
@@ -1506,6 +1606,121 @@ function initUI() {
     // Feature 8: Rate Limit
     document.getElementById("rateLimitHeader").addEventListener("click", () => toggleCollapsible("rateLimitHeader", "rateLimitBody"));
     updateRateLimitDisplay();
+
+    // A3: Keyboard navigation for collapsible headers
+    document.querySelectorAll(".collapsible-header[tabindex]").forEach(header => {
+        header.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); header.click(); }
+        });
+    });
+    // A3: Keyboard navigation for A/B tabs
+    document.querySelectorAll(".ab-tab").forEach(tab => {
+        tab.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tab.click(); }
+        });
+    });
+
+    // A5: Event delegation for attachment lists and template/list cards
+    document.getElementById("globalAttachmentList").addEventListener("click", (e) => {
+        const removeBtn = e.target.closest(".att-remove");
+        if (removeBtn) {
+            const name = removeBtn.dataset.name;
+            if (name) { appState.globalAttachments.delete(name); renderGlobalAttachmentList(); }
+        }
+    });
+    document.getElementById("perRecipientAttachmentList").addEventListener("click", (e) => {
+        const removeBtn = e.target.closest(".att-remove");
+        if (removeBtn) {
+            const key = removeBtn.dataset.key;
+            if (key) { appState.perRecipientFiles.delete(key); renderPerRecipientAttachmentList(); checkMissingAttachments(); }
+        }
+    });
+    document.getElementById("templateCards").addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".tmpl-delete");
+        if (delBtn) {
+            e.stopPropagation();
+            const idx = parseInt(delBtn.dataset.idx);
+            if (!isNaN(idx)) deleteTemplate(idx);
+            return;
+        }
+        const card = e.target.closest(".template-card");
+        if (card && card.dataset.tmplIdx) {
+            const builtIn = getBuiltInTemplates();
+            const custom = getSavedTemplates();
+            const all = builtIn.concat(custom);
+            const tmpl = all[parseInt(card.dataset.tmplIdx)];
+            if (tmpl) loadTemplate(tmpl);
+        }
+    });
+    document.getElementById("savedListCards").addEventListener("click", (e) => {
+        const delBtn = e.target.closest(".list-delete");
+        if (delBtn) {
+            e.stopPropagation();
+            const idx = parseInt(delBtn.dataset.idx);
+            if (!isNaN(idx)) deleteSavedList(idx);
+            return;
+        }
+        const card = e.target.closest(".saved-list-card");
+        if (card && card.dataset.listIdx) {
+            loadSavedList(parseInt(card.dataset.listIdx));
+        }
+    });
+
+    // B3: Suppression list
+    document.getElementById("suppressionHeader").addEventListener("click", () => {
+        const content = document.getElementById("suppressionContent");
+        content.style.display = content.style.display === "none" ? "block" : "none";
+    });
+    document.getElementById("suppressionHeader").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); document.getElementById("suppressionHeader").click(); }
+    });
+    document.getElementById("btnAddSuppression").addEventListener("click", () => {
+        const input = document.getElementById("suppressionInput");
+        const email = input.value.trim();
+        if (email) { addToSuppressionList(email); input.value = ""; }
+    });
+    document.getElementById("suppressionInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); document.getElementById("btnAddSuppression").click(); }
+    });
+    document.getElementById("btnClearSuppression").addEventListener("click", () => {
+        localStorage.removeItem("mmPro_suppressionList");
+        renderSuppressionList();
+    });
+    document.getElementById("suppressionList").addEventListener("click", (e) => {
+        const removeBtn = e.target.closest(".att-remove");
+        if (removeBtn) {
+            const email = removeBtn.dataset.email;
+            if (email) removeFromSuppressionList(email);
+        }
+    });
+    renderSuppressionList();
+
+    // B2: Validation modal
+    document.getElementById("btnValidationCancel").addEventListener("click", () => {
+        document.getElementById("validationResultsModal").style.display = "none";
+        releaseFocus();
+    });
+
+    // B4: Inline image insert
+    document.getElementById("btnInsertImage").addEventListener("click", () => {
+        document.getElementById("inlineImageInput").click();
+    });
+    document.getElementById("inlineImageInput").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith("image/")) return;
+        if (file.size > 2 * 1024 * 1024) {
+            showStatus("Image must be under 2MB", "error");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = '<img src="' + reader.result + '" alt="' + sanitizeHtml(file.name) + '" style="max-width:100%;height:auto;"/>';
+            document.getElementById("emailBody").focus();
+            document.execCommand("insertHTML", false, img);
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    });
 
     // Dark mode toggle (bound programmatically for CSP compliance)
     document.getElementById("darkModeToggle").addEventListener("click", toggleDarkMode);
@@ -1539,12 +1754,14 @@ function initEditorPlaceholder() {
 }
 function showLinkDialog() {
     document.getElementById("linkUrlInput").value = "";
-    document.getElementById("linkDialog").style.display = "flex";
-    document.getElementById("linkUrlInput").focus();
+    const modal = document.getElementById("linkDialog");
+    modal.style.display = "flex";
+    trapFocus(modal);
 }
 function insertLink() {
     const url = document.getElementById("linkUrlInput").value.trim();
     document.getElementById("linkDialog").style.display = "none";
+    releaseFocus();
     if (url) {
         document.getElementById("emailBody").focus();
         document.execCommand("createLink", false, url);
@@ -1621,7 +1838,9 @@ function showCampaignDetails() {
         "<p><strong>Total:</strong> " + c.total + "</p>" +
         "<p><strong>Sent:</strong> " + c.sent + "</p>" +
         "<p><strong>Errors:</strong> " + c.errors + "</p>";
-    document.getElementById("campaignDetailModal").style.display = "flex";
+    const campaignModal = document.getElementById("campaignDetailModal");
+    campaignModal.style.display = "flex";
+    trapFocus(campaignModal);
     sel.value = "";
 }
 
@@ -1896,8 +2115,7 @@ function renderGlobalAttachmentList() {
         div.className = "attachment-item";
         div.innerHTML = '<span class="att-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</span>' +
             '<span class="att-size">' + sizeKB + ' KB</span>' +
-            '<button class="att-remove" title="Remove">&times;</button>';
-        div.querySelector(".att-remove").addEventListener("click", () => { appState.globalAttachments.delete(name); renderGlobalAttachmentList(); });
+            '<button class="att-remove" data-name="' + escapeHtml(name) + '" title="Remove">&times;</button>';
         container.appendChild(div);
     }
 }
@@ -1906,11 +2124,16 @@ function handlePerRecipientAttachmentUpload(e) {
     if (!files.length) return;
     console.log("Per-recipient files:", files.map(f => f.name));
     files.forEach(file => {
-        readFileAsBase64(file).then(base64 => {
-            appState.perRecipientFiles.set(file.name.toLowerCase(), { name: file.name, contentBytes: base64, contentType: file.type || "application/octet-stream" });
-            renderPerRecipientAttachmentList();
-            checkMissingAttachments();
-        }).catch(err => console.error("Read error:", file.name, err));
+        // Store the File object for lazy reading; read content on-demand during send
+        appState.perRecipientFiles.set(file.name.toLowerCase(), {
+            name: file.name,
+            contentBytes: null,
+            contentType: file.type || "application/octet-stream",
+            file: file,
+            size: file.size
+        });
+        renderPerRecipientAttachmentList();
+        checkMissingAttachments();
     });
     e.target.value = "";
 }
@@ -1918,15 +2141,14 @@ function renderPerRecipientAttachmentList() {
     const container = document.getElementById("perRecipientAttachmentList");
     container.innerHTML = "";
     for (const [key, att] of appState.perRecipientFiles) {
-        const sizeKB = Math.round(att.contentBytes.length * 3 / 4 / 1024);
+        const sizeKB = att.contentBytes
+            ? Math.round(att.contentBytes.length * 3 / 4 / 1024)
+            : Math.round((att.size || 0) / 1024);
         const div = document.createElement("div");
         div.className = "attachment-item";
         div.innerHTML = '<span class="att-name" title="' + escapeHtml(att.name) + '">' + escapeHtml(att.name) + '</span>' +
             '<span class="att-size">' + sizeKB + ' KB</span>' +
-            '<button class="att-remove" title="Remove">&times;</button>';
-        div.querySelector(".att-remove").addEventListener("click", () => {
-            appState.perRecipientFiles.delete(key); renderPerRecipientAttachmentList(); checkMissingAttachments();
-        });
+            '<button class="att-remove" data-key="' + escapeHtml(key) + '" title="Remove">&times;</button>';
         container.appendChild(div);
     }
 }
@@ -2053,10 +2275,27 @@ function getAttachmentNamesForRow(row) {
     return names;
 }
 
+// ========== Conditional Content Processing (B1) ==========
+function processConditionals(text, row) {
+    // {{#ifEquals Col "val"}}...{{/ifEquals}}
+    text = text.replace(/\{\{#ifEquals\s+(\w+)\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/ifEquals\}\}/g,
+        (_, col, val, content) => (row[col] || '').toString().trim() === val ? content : '');
+    // {{#ifNotEquals Col "val"}}...{{/ifNotEquals}}
+    text = text.replace(/\{\{#ifNotEquals\s+(\w+)\s+"([^"]+)"\}\}([\s\S]*?)\{\{\/ifNotEquals\}\}/g,
+        (_, col, val, content) => (row[col] || '').toString().trim() !== val ? content : '');
+    // {{#if Col}}...{{/if}}
+    text = text.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
+        (_, col, content) => (row[col] && row[col].toString().trim()) ? content : '');
+    // {{#ifNot Col}}...{{/ifNot}}
+    text = text.replace(/\{\{#ifNot\s+(\w+)\}\}([\s\S]*?)\{\{\/ifNot\}\}/g,
+        (_, col, content) => (!row[col] || !row[col].toString().trim()) ? content : '');
+    return text;
+}
+
 // ========== Merge Engine ==========
 function mergeFields(template, row) {
     if (!template) return "";
-    let result = template;
+    let result = processConditionals(template, row);
     for (const key of appState.headers) {
         const regex = new RegExp("\\{" + escapeRegExp(key) + "\\}", "g");
         let value = String(row[key] === undefined || row[key] === null ? "" : row[key]);
@@ -2183,28 +2422,33 @@ function buildGraphAttachment(att) {
     return { "@odata.type": "#microsoft.graph.fileAttachment", name: att.name, contentType: att.contentType, contentBytes: att.contentBytes };
 }
 
-function collectAttachmentsForRow(row) {
+async function collectAttachmentsForRow(row) {
     const attachments = [];
-    // Add global attachments
+    // Add global attachments (already cached with content)
     for (const [, att] of appState.globalAttachments) attachments.push(att);
-    // Add per-recipient attachments from spreadsheet column
+    // Add per-recipient attachments from spreadsheet column (lazy read)
     if (appState.mapping.attachments) {
         const val = String(row[appState.mapping.attachments] || "").trim();
-        if (val) val.split(";").forEach(f => {
-            const rawName = f.trim();
-            if (!rawName) return;
-            // Extract just the filename from full path (handle both / and \)
-            const fileName = rawName.replace(/^.*[\\\/]/, "").toLowerCase();
-            // Try exact match first, then filename-only match
-            let att = appState.perRecipientFiles.get(rawName.toLowerCase());
-            if (!att) att = appState.perRecipientFiles.get(fileName);
-            if (att) {
-                attachments.push(att);
-                console.log("Per-recipient attachment matched:", rawName, "->", att.name);
-            } else {
-                console.warn("Per-recipient attachment not found:", rawName, "| Tried key:", fileName, "| Available:", Array.from(appState.perRecipientFiles.keys()).join(", "));
+        if (val) {
+            const parts = val.split(";");
+            for (const f of parts) {
+                const rawName = f.trim();
+                if (!rawName) continue;
+                const fileName = rawName.replace(/^.*[\\\/]/, "").toLowerCase();
+                let att = appState.perRecipientFiles.get(rawName.toLowerCase());
+                if (!att) att = appState.perRecipientFiles.get(fileName);
+                if (att) {
+                    // Lazy load: read file content on-demand if not yet loaded
+                    if (!att.contentBytes && att.file) {
+                        att.contentBytes = await readFileAsBase64(att.file);
+                    }
+                    attachments.push({ name: att.name, contentBytes: att.contentBytes, contentType: att.contentType });
+                    console.log("Per-recipient attachment matched:", rawName, "->", att.name);
+                } else {
+                    console.warn("Per-recipient attachment not found:", rawName, "| Tried key:", fileName, "| Available:", Array.from(appState.perRecipientFiles.keys()).join(", "));
+                }
             }
-        });
+        }
     }
     return attachments;
 }
@@ -2233,6 +2477,92 @@ async function sendOneEmail(token, to, cc, bcc, subject, body, asHtml, fromAlias
     } else {
         console.log("Draft saved:", msgId);
     }
+}
+
+// ========== Email Validation (B2) ==========
+function validateRecipients(data, toColumn) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const issues = [];
+    const seen = new Map();
+
+    data.forEach((row, i) => {
+        const email = (row[toColumn] || '').toString().trim();
+        if (!email) {
+            issues.push({ row: i + 2, email: email, issue: 'Empty email' });
+        } else if (!emailRegex.test(email)) {
+            issues.push({ row: i + 2, email: email, issue: 'Invalid format' });
+        }
+        if (email && seen.has(email.toLowerCase())) {
+            issues.push({ row: i + 2, email: email, issue: 'Duplicate (first at row ' + seen.get(email.toLowerCase()) + ')' });
+        } else if (email) {
+            seen.set(email.toLowerCase(), i + 2);
+        }
+    });
+
+    return issues;
+}
+
+function showValidationIssues(issues) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("validationResultsModal");
+        const content = document.getElementById("validationResultsContent");
+        let html = '<p>' + issues.length + ' issue(s) found:</p>';
+        html += '<table class="results-table"><tr><th>Row</th><th>Email</th><th>Issue</th></tr>';
+        issues.slice(0, 50).forEach(issue => {
+            html += '<tr><td>' + issue.row + '</td><td>' + escapeHtml(issue.email) + '</td><td>' + escapeHtml(issue.issue) + '</td></tr>';
+        });
+        if (issues.length > 50) html += '<tr><td colspan="3">...and ' + (issues.length - 50) + ' more</td></tr>';
+        html += '</table>';
+        content.innerHTML = html;
+        modal.style.display = "flex";
+        trapFocus(modal);
+
+        const sendBtn = document.getElementById("btnValidationSendAnyway");
+        const cancelBtn = document.getElementById("btnValidationCancel");
+        const cleanup = () => {
+            sendBtn.removeEventListener("click", onSend);
+            cancelBtn.removeEventListener("click", onCancel);
+            modal.style.display = "none";
+            releaseFocus();
+        };
+        const onSend = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+        sendBtn.addEventListener("click", onSend);
+        cancelBtn.addEventListener("click", onCancel);
+    });
+}
+
+// ========== Suppression / Blocklist (B3) ==========
+function getSuppressionList() {
+    return safeJsonParse(localStorage.getItem('mmPro_suppressionList'), []);
+}
+function addToSuppressionList(email) {
+    const list = getSuppressionList();
+    const normalized = email.toLowerCase().trim();
+    if (normalized && !list.includes(normalized)) {
+        list.push(normalized);
+        localStorage.setItem('mmPro_suppressionList', JSON.stringify(list));
+    }
+    renderSuppressionList();
+}
+function removeFromSuppressionList(email) {
+    let list = getSuppressionList();
+    list = list.filter(e => e !== email.toLowerCase().trim());
+    localStorage.setItem('mmPro_suppressionList', JSON.stringify(list));
+    renderSuppressionList();
+}
+function renderSuppressionList() {
+    const container = document.getElementById('suppressionList');
+    if (!container) return;
+    const list = getSuppressionList();
+    if (!list.length) { container.innerHTML = '<p class="text-muted" data-i18n="noBlockedEmails">No blocked emails</p>'; }
+    else {
+        container.innerHTML = list.map(e =>
+            '<div class="suppression-item"><span>' + escapeHtml(e) + '</span><button class="btn-icon att-remove" data-email="' + escapeHtml(e) + '">✕</button></div>'
+        ).join('');
+    }
+    const countEl = document.getElementById('suppressionCount');
+    if (countEl) countEl.textContent = list.length + ' blocked';
 }
 
 // ========== Execute Mail Merge ==========
@@ -2294,6 +2624,18 @@ async function executeMerge(testMode) {
         const total = sendItems.length;
         if (total === 0) { showStatus("\u26A0\uFE0F No recipients.", "warning"); return; }
 
+        // B2: Validate recipients before sending
+        if (!testMode) {
+            const validationIssues = validateRecipients(appState.rows, appState.mapping.to);
+            if (validationIssues.length > 0) {
+                const proceed = await showValidationIssues(validationIssues);
+                if (!proceed) return;
+            }
+        }
+
+        // B3: Get suppression list
+        const suppressionList = getSuppressionList();
+
         // Lock UI
         appState.sending = true;
         setButtonsDisabled(true);
@@ -2338,7 +2680,7 @@ async function executeMerge(testMode) {
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
             if (globalBCC) bccL = bccL ? bccL + ";" + globalBCC : globalBCC;
-            const atts = collectAttachmentsForRow(row);
+            const atts = await collectAttachmentsForRow(row);
             try {
                 await sendOneEmail(token, testTo, "", "", "[TEST] " + mSubj, mBody, sendAsHtml, fromAlias, atts, draftOnly, opts);
                 updateProgress(1, 1, "Done!");
@@ -2375,6 +2717,11 @@ async function executeMerge(testMode) {
                 appState.results.push({ row: i + 2, to: "(empty)", status: "Error", error: "No email address" });
                 continue;
             }
+            // B3: Skip suppressed emails
+            if (suppressionList.includes(toAddr.toLowerCase().trim())) {
+                appState.results.push({ row: i + 2, to: toAddr, status: "Skipped", error: "Suppressed (blocklist)" });
+                continue;
+            }
             recipientEmails.push(toAddr);
             // A/B split: deterministic by index
             const isGroupB = abEnabled && (i >= Math.ceil(total * abRatio / 100));
@@ -2398,7 +2745,7 @@ async function executeMerge(testMode) {
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
             if (globalBCC) bccL = bccL ? bccL + ";" + globalBCC : globalBCC;
-            const atts = collectAttachmentsForRow(row);
+            const atts = await collectAttachmentsForRow(row);
 
             // Enforce rate limit before each send
             await rateLimiter.waitUntilReady();
@@ -2651,6 +2998,7 @@ function loadTemplatesUI() {
     all.forEach(function(tmpl, idx) {
         var card = document.createElement("div");
         card.className = "template-card";
+        card.dataset.tmplIdx = idx;
         var info = document.createElement("div");
         info.className = "template-card-info";
         info.innerHTML = '<div class="template-card-name">' + escapeHtml(tmpl.name) + '</div>' +
@@ -2662,16 +3010,12 @@ function loadTemplatesUI() {
         card.appendChild(badge);
         if (!tmpl.builtIn) {
             var del = document.createElement("button");
-            del.className = "btn-icon";
+            del.className = "btn-icon tmpl-delete";
             del.title = "Delete";
+            del.dataset.idx = idx - builtIn.length;
             del.innerHTML = "&times;";
-            del.addEventListener("click", function(e) {
-                e.stopPropagation();
-                deleteTemplate(idx - builtIn.length);
-            });
             card.appendChild(del);
         }
-        card.addEventListener("click", function() { loadTemplate(tmpl); });
         container.appendChild(card);
     });
 }
@@ -2685,8 +3029,9 @@ function loadTemplate(tmpl) {
 
 function showSaveTemplateDialog() {
     document.getElementById("templateNameInput").value = "";
-    document.getElementById("templateNameDialog").style.display = "flex";
-    document.getElementById("templateNameInput").focus();
+    const modal = document.getElementById("templateNameDialog");
+    modal.style.display = "flex";
+    trapFocus(modal);
 }
 
 function saveCurrentTemplate() {
@@ -2702,6 +3047,7 @@ function saveCurrentTemplate() {
     });
     saveTemplatesStorage(templates);
     document.getElementById("templateNameDialog").style.display = "none";
+    releaseFocus();
     loadTemplatesUI();
 }
 
@@ -2864,29 +3210,24 @@ function loadSavedListsUI() {
     lists.forEach(function(list, idx) {
         var card = document.createElement("div");
         card.className = "saved-list-card";
+        card.dataset.listIdx = idx;
         card.innerHTML = '<span class="list-name">' + escapeHtml(list.name) + '</span>' +
             '<span class="list-meta">' + list.rows.length + ' rows</span>';
         var del = document.createElement("button");
-        del.className = "btn-icon";
+        del.className = "btn-icon list-delete";
         del.innerHTML = "&times;";
         del.title = "Delete";
-        del.addEventListener("click", function(e) {
-            e.stopPropagation();
-            deleteSavedList(idx);
-        });
+        del.dataset.idx = idx;
         card.appendChild(del);
-        card.addEventListener("click", function(e) {
-            if (e.target.closest(".btn-icon")) return;
-            loadSavedList(idx);
-        });
         container.appendChild(card);
     });
 }
 
 function showSaveListDialog() {
     document.getElementById("listNameInput").value = "";
-    document.getElementById("listNameDialog").style.display = "flex";
-    document.getElementById("listNameInput").focus();
+    const modal = document.getElementById("listNameDialog");
+    modal.style.display = "flex";
+    trapFocus(modal);
 }
 
 function saveCurrentList() {
@@ -2902,6 +3243,7 @@ function saveCurrentList() {
     });
     saveSavedListsStorage(lists);
     document.getElementById("listNameDialog").style.display = "none";
+    releaseFocus();
     loadSavedListsUI();
 }
 
@@ -2939,7 +3281,9 @@ function showMergeListDialog() {
             sel.appendChild(opt);
         });
     }
-    document.getElementById("mergeListDialog").style.display = "flex";
+    const mergeModal = document.getElementById("mergeListDialog");
+    mergeModal.style.display = "flex";
+    trapFocus(mergeModal);
 }
 
 function mergeSelectedList() {
@@ -2948,6 +3292,7 @@ function mergeSelectedList() {
     var lists = getSavedLists();
     var list = lists[idx];
     document.getElementById("mergeListDialog").style.display = "none";
+    releaseFocus();
     if (!list) return;
     // Merge headers
     var mergedHeaders = appState.headers.slice();
@@ -3024,7 +3369,9 @@ function showSignatureDialog() {
     var textarea = document.getElementById("signatureTextarea");
     textarea.value = appState.signatureHtml || "";
     document.getElementById("chkAutoSignature").checked = appState.autoSignature;
-    document.getElementById("signatureDialog").style.display = "flex";
+    const sigModal = document.getElementById("signatureDialog");
+    sigModal.style.display = "flex";
+    trapFocus(sigModal);
 }
 
 async function fetchOutlookSignature() {
@@ -3063,6 +3410,7 @@ function saveSignature() {
     localStorage.setItem("mailmergepro_signature", content);
     localStorage.setItem("mailmergepro_autosignature", autoAppend ? "true" : "false");
     document.getElementById("signatureDialog").style.display = "none";
+    releaseFocus();
     document.getElementById("chkAutoSignatureInline").checked = autoAppend;
     loadSignaturePreview();
     showStatus(t("signatureSaved"), "info");
