@@ -247,7 +247,7 @@ function applyTranslations() {
 const msalConfig = {
     auth: {
         clientId: "360e4343-614f-4f70-a650-c020868516fc",
-        authority: "https://login.microsoftonline.com/common",
+        authority: "https://login.microsoftonline.com/e67c588e-f654-4727-b794-1ca5df7b6ee9",
         redirectUri: "https://itsjamessmith.github.io/mailmerge-pro/taskpane.html"
     },
     cache: { cacheLocation: "localStorage" }
