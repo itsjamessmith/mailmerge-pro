@@ -17,26 +17,26 @@
     <!-- Onboarding Overlay -->
     <div id="onboardingOverlay" class="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome" style="display:none;">
         <div class="onboarding-card">
-            <h2>&#x1F44B; Welcome to MailMerge-Pro!</h2>
-            <p>Upload your spreadsheet to get started with personalized bulk email.</p>
+            <h2>&#x1F44B; <span data-i18n="onboardingTitle">Welcome to MailMerge-Pro!</span></h2>
+            <p data-i18n="onboardingDescription">Upload your spreadsheet to get started with personalized bulk email.</p>
             <ul>
-                <li>&#x1F4CB; Upload Excel/CSV with recipient data</li>
-                <li>&#x1F517; Map columns to email fields</li>
-                <li>&#x270F;&#xFE0F; Compose with merge fields like {FirstName}</li>
-                <li>&#x1F680; Send personalized emails to everyone</li>
+                <li>&#x1F4CB; <span data-i18n="onboardingStep1">Upload Excel/CSV with recipient data</span></li>
+                <li>&#x1F517; <span data-i18n="onboardingStep2">Map columns to email fields</span></li>
+                <li>&#x270F;&#xFE0F; <span data-i18n="onboardingStep3">Compose with merge fields like {FirstName}</span></li>
+                <li>&#x1F680; <span data-i18n="onboardingStep4">Send personalized emails to everyone</span></li>
             </ul>
-            <button id="btnDismissOnboarding" class="btn btn-primary btn-block">Get Started</button>
+            <button id="btnDismissOnboarding" class="btn btn-primary btn-block" data-i18n="getStartedBtn">Get Started</button>
         </div>
     </div>
 
     <!-- Link Dialog -->
     <div id="linkDialog" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Insert Link" style="display:none;">
         <div class="modal-card">
-            <h3>Insert Link</h3>
-            <input type="text" id="linkUrlInput" class="input" placeholder="https://example.com"/>
+            <h3 data-i18n="insertLinkTitle">Insert Link</h3>
+            <input type="text" id="linkUrlInput" class="input" placeholder="https://example.com" data-i18n-placeholder="linkUrlPlaceholder"/>
             <div class="form-row mt-8">
-                <button id="btnLinkCancel" class="btn btn-secondary btn-small">Cancel</button>
-                <button id="btnLinkInsert" class="btn btn-primary btn-small">Insert</button>
+                <button id="btnLinkCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                <button id="btnLinkInsert" class="btn btn-primary btn-small" data-i18n="insertBtn">Insert</button>
             </div>
         </div>
     </div>
@@ -44,9 +44,9 @@
     <!-- Campaign Detail Modal -->
     <div id="campaignDetailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Campaign Details" style="display:none;">
         <div class="modal-card">
-            <h3>&#x1F4DC; Campaign Details</h3>
+            <h3>&#x1F4DC; <span data-i18n="campaignDetailsTitle">Campaign Details</span></h3>
             <div id="campaignDetailContent"></div>
-            <button id="btnCloseCampaignDetail" class="btn btn-secondary btn-small btn-block mt-8">Close</button>
+            <button id="btnCloseCampaignDetail" class="btn btn-secondary btn-small btn-block mt-8" data-i18n="closeBtn">Close</button>
         </div>
     </div>
 
@@ -54,10 +54,10 @@
     <div id="templateNameDialog" class="input-dialog-overlay" role="dialog" aria-modal="true" aria-label="Template Name" style="display:none;">
         <div class="input-dialog">
             <h3 data-i18n="templateNamePrompt">Template Name</h3>
-            <input type="text" id="templateNameInput" class="input" placeholder="Enter template name..."/>
+            <input type="text" id="templateNameInput" class="input" placeholder="Enter template name..." data-i18n-placeholder="templateNamePlaceholder"/>
             <div class="form-row">
-                <button id="btnTemplateNameCancel" class="btn btn-secondary btn-small">Cancel</button>
-                <button id="btnTemplateNameSave" class="btn btn-primary btn-small">Save</button>
+                <button id="btnTemplateNameCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                <button id="btnTemplateNameSave" class="btn btn-primary btn-small" data-i18n="saveBtn">Save</button>
             </div>
         </div>
     </div>
@@ -66,10 +66,10 @@
     <div id="listNameDialog" class="input-dialog-overlay" role="dialog" aria-modal="true" aria-label="List Name" style="display:none;">
         <div class="input-dialog">
             <h3 data-i18n="listNamePrompt">List Name</h3>
-            <input type="text" id="listNameInput" class="input" placeholder="Enter list name..."/>
+            <input type="text" id="listNameInput" class="input" placeholder="Enter list name..." data-i18n-placeholder="listNamePlaceholder"/>
             <div class="form-row">
-                <button id="btnListNameCancel" class="btn btn-secondary btn-small">Cancel</button>
-                <button id="btnListNameSave" class="btn btn-primary btn-small">Save</button>
+                <button id="btnListNameCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                <button id="btnListNameSave" class="btn btn-primary btn-small" data-i18n="saveBtn">Save</button>
             </div>
         </div>
     </div>
@@ -80,8 +80,8 @@
             <h3 data-i18n="mergeSelectPrompt">Select a list to merge with current data:</h3>
             <select id="mergeListSelect" class="select" style="margin-bottom:8px;"></select>
             <div class="form-row">
-                <button id="btnMergeListCancel" class="btn btn-secondary btn-small">Cancel</button>
-                <button id="btnMergeListConfirm" class="btn btn-primary btn-small">Merge</button>
+                <button id="btnMergeListCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                <button id="btnMergeListConfirm" class="btn btn-primary btn-small" data-i18n="mergeBtn">Merge</button>
             </div>
         </div>
     </div>
@@ -93,11 +93,11 @@
             <button id="btnFetchSignature" class="btn btn-primary btn-small btn-block" data-i18n="fetchSignature">Fetch from Outlook</button>
             <div id="signatureFetchStatus" class="hint" style="margin:6px 0;"></div>
             <p class="hint" data-i18n="pasteManually">Or paste your signature below:</p>
-            <textarea id="signatureTextarea" class="signature-textarea" placeholder="Paste HTML or plain text signature..."></textarea>
+            <textarea id="signatureTextarea" class="signature-textarea" placeholder="Paste HTML or plain text signature..." data-i18n-placeholder="signaturePlaceholder"></textarea>
             <label class="checkbox-row mt-8"><input type="checkbox" id="chkAutoSignature"/> <span data-i18n="autoAppendSig">Auto-append signature</span></label>
             <div class="form-row mt-8">
-                <button id="btnSignatureCancel" class="btn btn-secondary btn-small">Cancel</button>
-                <button id="btnSignatureSave" class="btn btn-primary btn-small">Save</button>
+                <button id="btnSignatureCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                <button id="btnSignatureSave" class="btn btn-primary btn-small" data-i18n="saveBtn">Save</button>
             </div>
         </div>
     </div>
@@ -138,21 +138,22 @@
                         <option value="de">Deutsch</option>
                         <option value="pt">Português</option>
                         <option value="ja">日本語</option>
+                        <option value="zh">中文</option>
                     </select>
                 </div>
                 <a id="btnDashboard" class="dashboard-link" data-i18n="dashboard">&#x1F4CA; Dashboard</a>
             </div>
             <div class="campaign-row">
-                <input type="text" id="campaignName" class="input input-campaign" placeholder="Campaign name (optional)"/>
+                <input type="text" id="campaignName" class="input input-campaign" placeholder="Campaign name (optional)" data-i18n-placeholder="campaignNamePlaceholder"/>
                 <select id="pastCampaigns" class="select select-sm">
-                    <option value="">&#x1F4DC; History</option>
+                    <option value="" data-i18n="historyOption">&#x1F4DC; History</option>
                 </select>
             </div>
         </div>
 
         <!-- Auth bar -->
         <div id="authBar" class="auth-bar">
-            <span id="authStatus" class="auth-status">Initializing&#x2026;</span>
+            <span id="authStatus" class="auth-status" data-i18n="authInitializing">Initializing&#x2026;</span>
             <button id="btnSignIn" class="btn btn-primary btn-small" style="display:none;" data-i18n="signIn">Sign In</button>
             <button id="btnSignOut" class="btn btn-secondary btn-small" style="display:none;" data-i18n="signOut">Sign Out</button>
         </div>
@@ -198,18 +199,18 @@
                 <button id="btnImportContacts" class="btn btn-secondary btn-block" data-i18n="importContacts">&#x1F464; Import from Contacts</button>
             </div>
             <div id="contactsPanel" class="card" style="display:none;">
-                <h3>&#x1F464; Select Contacts</h3>
-                <div id="contactsLoading" class="loading-text">Loading contacts&#x2026;</div>
+                <h3>&#x1F464; <span data-i18n="selectContactsTitle">Select Contacts</span></h3>
+                <div id="contactsLoading" class="loading-text" data-i18n="loadingContacts">Loading contacts&#x2026;</div>
                 <div id="contactsList" class="contacts-list"></div>
                 <div class="form-row mt-8" id="contactsActions" style="display:none;">
-                    <button id="btnContactsSelectAll" class="btn btn-secondary btn-small">Select All</button>
-                    <button id="btnContactsCancel" class="btn btn-secondary btn-small">Cancel</button>
-                    <button id="btnContactsUse" class="btn btn-primary btn-small">Use Selected</button>
+                    <button id="btnContactsSelectAll" class="btn btn-secondary btn-small" data-i18n="selectAllBtn">Select All</button>
+                    <button id="btnContactsCancel" class="btn btn-secondary btn-small" data-i18n="cancelBtn">Cancel</button>
+                    <button id="btnContactsUse" class="btn btn-primary btn-small" data-i18n="useSelectedBtn">Use Selected</button>
                 </div>
             </div>
             <div id="dataPreview" class="card" style="display:none;">
                 <p id="dataStats" class="stats"></p>
-                <input type="text" id="recipientSearch" class="input" placeholder="&#x1F50D; Search recipients..."/>
+                <input type="text" id="recipientSearch" class="input" placeholder="&#x1F50D; Search recipients..." data-i18n-placeholder="searchRecipientsPlaceholder"/>
                 <div id="previewTable" class="table-wrapper"></div>
             </div>
             <!-- Feature 5: Contact Groups / Saved Lists -->
@@ -226,39 +227,39 @@
                     </div>
                 </div>
             </div>
-            <button id="btnStep1Next" class="btn btn-primary btn-block btn-next" disabled>Next &#x2192;</button>
+            <button id="btnStep1Next" class="btn btn-primary btn-block btn-next" disabled data-i18n="nextBtn">Next &#x2192;</button>
         </div>
 
         <!-- Step 2: Map Columns -->
         <div id="step2" class="step-content">
             <div class="card">
-                <h2>&#x1F517; Map Columns</h2>
-                <p>Match your spreadsheet columns to email fields.</p>
+                <h2>&#x1F517; <span data-i18n="mapColumnsTitle">Map Columns</span></h2>
+                <p data-i18n="mapColumnsDescription">Match your spreadsheet columns to email fields.</p>
                 <div class="form-group">
-                    <label>To (Email) <span class="required">*</span></label>
+                    <label><span data-i18n="labelTo">To (Email)</span> <span class="required">*</span></label>
                     <select id="mapTo" class="select"></select>
                 </div>
                 <div class="form-group">
-                    <label>CC <span class="optional">(optional per-row)</span></label>
+                    <label><span data-i18n="labelCC">CC</span> <span class="optional" data-i18n="optionalPerRow">(optional per-row)</span></label>
                     <select id="mapCC" class="select"></select>
                 </div>
                 <div class="form-group">
-                    <label>BCC <span class="optional">(optional per-row)</span></label>
+                    <label><span data-i18n="labelBCC">BCC</span> <span class="optional" data-i18n="optionalPerRow">(optional per-row)</span></label>
                     <select id="mapBCC" class="select"></select>
                 </div>
                 <div class="form-group">
-                    <label>Subject <span class="optional">(optional per-row)</span></label>
+                    <label><span data-i18n="labelSubject">Subject</span> <span class="optional" data-i18n="optionalPerRow">(optional per-row)</span></label>
                     <select id="mapSubject" class="select"></select>
                 </div>
                 <div class="form-group">
-                    <label>Attachments <span class="optional">(column with filenames)</span></label>
+                    <label><span data-i18n="labelAttachments">Attachments</span> <span class="optional" data-i18n="columnWithFilenames">(column with filenames)</span></label>
                     <select id="mapAttachments" class="select"></select>
-                    <small>Filenames separated by semicolons</small>
+                    <small data-i18n="filenamesSemicolonNote">Filenames separated by semicolons</small>
                 </div>
             </div>
             <div class="form-row mt-8">
-                <button id="btnStep2Back" class="btn btn-secondary">&#x2190; Back</button>
-                <button id="btnStep2Next" class="btn btn-primary">Next &#x2192;</button>
+                <button id="btnStep2Back" class="btn btn-secondary" data-i18n="backBtn">&#x2190; Back</button>
+                <button id="btnStep2Next" class="btn btn-primary" data-i18n="nextBtn">Next &#x2192;</button>
             </div>
         </div>
 
@@ -294,21 +295,21 @@
             </div>
 
             <div class="card">
-                <h2>&#x270F;&#xFE0F; Compose Email</h2>
+                <h2>&#x270F;&#xFE0F; <span data-i18n="composeEmailTitle">Compose Email</span></h2>
                 <div class="form-group">
-                    <label>From / Send As <span class="optional">(alias)</span></label>
-                    <input type="text" id="fromAlias" class="input" placeholder="Leave blank for default"/>
-                    <small>Requires Send As permission for this address</small>
+                    <label><span data-i18n="labelFromSendAs">From / Send As</span> <span class="optional" data-i18n="aliasNote">(alias)</span></label>
+                    <input type="text" id="fromAlias" class="input" placeholder="Leave blank for default" data-i18n-placeholder="leaveBlankPlaceholder"/>
+                    <small data-i18n="sendAsPermissionNote">Requires Send As permission for this address</small>
                 </div>
                 <div class="form-group">
-                    <label>Shared Mailbox <span class="optional">(send on behalf)</span></label>
-                    <input type="email" id="sharedMailbox" class="input" placeholder="e.g. shared@company.com" aria-label="Shared mailbox email"/>
-                    <small>Send via /users/{mailbox}/sendMail</small>
+                    <label><span data-i18n="labelSharedMailbox">Shared Mailbox</span> <span class="optional" data-i18n="sendOnBehalfNote">(send on behalf)</span></label>
+                    <input type="email" id="sharedMailbox" class="input" placeholder="e.g. shared@company.com" aria-label="Shared mailbox email" data-i18n-placeholder="sharedMailboxPlaceholder"/>
+                    <small data-i18n="sendViaNote">Send via /users/{mailbox}/sendMail</small>
                 </div>
                 <div class="form-group">
-                    <label>Subject Line</label>
-                    <input type="text" id="emailSubject" class="input" placeholder="e.g. Hello {FirstName}, your update!" required aria-label="Email subject line"/>
-                    <small>Use {ColumnName} for personalization</small>
+                    <label data-i18n="labelSubjectLine">Subject Line</label>
+                    <input type="text" id="emailSubject" class="input" placeholder="e.g. Hello {FirstName}, your update!" required aria-label="Email subject line" data-i18n-placeholder="subjectPlaceholder"/>
+                    <small data-i18n="useColumnNameNote">Use {ColumnName} for personalization</small>
                 </div>
                 <!-- Feature 4: A/B Testing Toggle -->
                 <div class="form-group">
@@ -321,8 +322,8 @@
                     </div>
                     <div id="abVersionB" style="display:none;">
                         <div class="form-group">
-                            <label>Subject Line (B)</label>
-                            <input type="text" id="emailSubjectB" class="input" placeholder="Alternative subject for B group"/>
+                            <label data-i18n="labelSubjectLineB">Subject Line (B)</label>
+                            <input type="text" id="emailSubjectB" class="input" placeholder="Alternative subject for B group" data-i18n-placeholder="altSubjectPlaceholder"/>
                         </div>
                     </div>
                     <div class="ab-split-control">
@@ -335,24 +336,24 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Global CC <span class="optional">(all emails)</span></label>
-                    <input type="email" id="globalCC" class="input" placeholder="e.g. manager@company.com" aria-label="Global CC email"/>
+                    <label><span data-i18n="labelGlobalCC">Global CC</span> <span class="optional" data-i18n="allEmailsNote">(all emails)</span></label>
+                    <input type="email" id="globalCC" class="input" placeholder="e.g. manager@company.com" aria-label="Global CC email" data-i18n-placeholder="globalCCPlaceholder"/>
                 </div>
                 <div class="form-group">
-                    <label>Global BCC <span class="optional">(all emails)</span></label>
-                    <input type="email" id="globalBCC" class="input" placeholder="e.g. audit@company.com" aria-label="Global BCC email"/>
+                    <label><span data-i18n="labelGlobalBCC">Global BCC</span> <span class="optional" data-i18n="allEmailsNote">(all emails)</span></label>
+                    <input type="email" id="globalBCC" class="input" placeholder="e.g. audit@company.com" aria-label="Global BCC email" data-i18n-placeholder="globalBCCPlaceholder"/>
                 </div>
             </div>
 
             <div class="card">
-                <label class="card-label">Email Body <span id="abEditorLabel" style="display:none;color:var(--primary);font-size:11px;">(Version A)</span></label>
+                <label class="card-label"><span data-i18n="labelEmailBody">Email Body</span> <span id="abEditorLabel" style="display:none;color:var(--primary);font-size:11px;" data-i18n="versionALabel">(Version A)</span></label>
                 <div class="editor-toolbar" id="editorToolbar">
-                    <button type="button" data-cmd="bold" title="Bold"><strong>B</strong></button>
-                    <button type="button" data-cmd="italic" title="Italic"><em>I</em></button>
-                    <button type="button" data-cmd="underline" title="Underline"><u>U</u></button>
-                    <button type="button" data-cmd="insertUnorderedList" title="Bullet List">&#x2022; List</button>
-                    <button type="button" data-cmd="createLink" title="Insert Link">&#x1F517;</button>
-                    <label class="color-picker-wrap" title="Font Color">
+                    <button type="button" data-cmd="bold" title="Bold" data-i18n-title="tooltipBold"><strong>B</strong></button>
+                    <button type="button" data-cmd="italic" title="Italic" data-i18n-title="tooltipItalic"><em>I</em></button>
+                    <button type="button" data-cmd="underline" title="Underline" data-i18n-title="tooltipUnderline"><u>U</u></button>
+                    <button type="button" data-cmd="insertUnorderedList" title="Bullet List" data-i18n-title="tooltipBulletList">&#x2022; List</button>
+                    <button type="button" data-cmd="createLink" title="Insert Link" data-i18n-title="tooltipInsertLink">&#x1F517;</button>
+                    <label class="color-picker-wrap" title="Font Color" data-i18n-title="tooltipFontColor">
                         <span class="color-a">A</span>
                         <input type="color" id="fontColorPicker" value="#000000"/>
                     </label>
@@ -362,11 +363,11 @@
                 <div id="emailBody" class="rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Email body"></div>
                 <!-- Version B editor (hidden by default) -->
                 <div id="emailBodyBContainer" style="display:none;">
-                    <label class="card-label mt-8" style="color:var(--primary);">Email Body (Version B)</label>
+                    <label class="card-label mt-8" style="color:var(--primary);" data-i18n="labelEmailBodyB">Email Body (Version B)</label>
                     <div id="emailBodyB" class="rich-editor" contenteditable="true" style="border:1px solid var(--border-color);border-radius:var(--radius-sm);margin-top:4px;"></div>
                 </div>
                 <div class="form-group mt-8">
-                    <label class="checkbox-row"><input type="checkbox" id="chkSendAsHtml" checked/> Send as HTML</label>
+                    <label class="checkbox-row"><input type="checkbox" id="chkSendAsHtml" checked/> <span data-i18n="sendAsHtmlLabel">Send as HTML</span></label>
                 </div>
             </div>
 
@@ -379,13 +380,13 @@
                 <div class="collapsible-body" id="signatureBody">
                     <label class="checkbox-row"><input type="checkbox" id="chkAutoSignatureInline"/> <span data-i18n="autoAppendSig">Auto-append signature</span></label>
                     <div id="signaturePreview" class="signature-preview" style="display:none;"></div>
-                    <button id="btnManageSignature" class="btn btn-secondary btn-small mt-8">&#x270D;&#xFE0F; Manage Signature</button>
+                    <button id="btnManageSignature" class="btn btn-secondary btn-small mt-8" data-i18n="manageSignatureBtn">&#x270D;&#xFE0F; Manage Signature</button>
                 </div>
             </div>
 
             <div class="card" id="defaultsCard">
-                <h3>&#x1F504; Fallback Default Values</h3>
-                <p class="hint">Used when a merge field resolves to empty for a recipient.</p>
+                <h3>&#x1F504; <span data-i18n="fallbackDefaultsTitle">Fallback Default Values</span></h3>
+                <p class="hint" data-i18n="fallbackDefaultsDesc">Used when a merge field resolves to empty for a recipient.</p>
                 <div id="defaultsContainer"></div>
             </div>
 
@@ -393,57 +394,57 @@
                 <label class="card-label">&#x1F4CE; Global Attachments <span class="optional">(every email)</span></label>
                 <div class="attachment-upload-area">
                     <input type="file" id="globalAttachmentInput" multiple/>
-                    <label for="globalAttachmentInput" class="btn btn-secondary btn-small">+ Add Files</label>
+                    <label for="globalAttachmentInput" class="btn btn-secondary btn-small" data-i18n="addFilesBtn">+ Add Files</label>
                     <div id="globalAttachmentList" class="attachment-list"></div>
                 </div>
             </div>
 
             <div class="card" id="perRecipientAttachmentSection" style="display:none;">
-                <label class="card-label">&#x1F4CE; Per-Recipient Attachments</label>
-                <p class="hint">Upload files referenced in your Attachments column. Names must match.</p>
+                <label class="card-label">&#x1F4CE; <span data-i18n="perRecipientAttLabel">Per-Recipient Attachments</span></label>
+                <p class="hint" data-i18n="perRecipientAttDesc">Upload files referenced in your Attachments column. Names must match.</p>
                 <div class="attachment-upload-area">
                     <input type="file" id="perRecipientAttachmentInput" multiple/>
-                    <label for="perRecipientAttachmentInput" class="btn btn-secondary btn-small">+ Upload Files</label>
+                    <label for="perRecipientAttachmentInput" class="btn btn-secondary btn-small" data-i18n="uploadFilesBtn">+ Upload Files</label>
                     <div id="perRecipientAttachmentList" class="attachment-list"></div>
                 </div>
                 <div id="missingAttachmentWarning" class="warning-box" style="display:none;"></div>
             </div>
 
             <div class="form-row mt-8">
-                <button id="btnStep3Back" class="btn btn-secondary">&#x2190; Back</button>
-                <button id="btnStep3Next" class="btn btn-primary">Next &#x2192;</button>
+                <button id="btnStep3Back" class="btn btn-secondary" data-i18n="backBtn">&#x2190; Back</button>
+                <button id="btnStep3Next" class="btn btn-primary" data-i18n="nextBtn">Next &#x2192;</button>
             </div>
         </div>
 
         <!-- Step 4: Review & Send -->
         <div id="step4" class="step-content">
             <div class="card">
-                <h2>&#x1F680; Review &amp; Send</h2>
+                <h2>&#x1F680; <span data-i18n="reviewSendTitle">Review &amp; Send</span></h2>
                 <div id="reviewSummary" class="review-summary"></div>
             </div>
 
             <div class="card">
                 <div class="carousel-nav">
-                    <button id="btnPrevPreview" class="btn btn-secondary btn-small" disabled>&#x25C0; Prev</button>
+                    <button id="btnPrevPreview" class="btn btn-secondary btn-small" disabled data-i18n="prevBtn">&#x25C0; Prev</button>
                     <span id="previewIndex" class="preview-counter">1 / 1</span>
-                    <button id="btnNextPreview" class="btn btn-secondary btn-small">Next &#x25B6;</button>
+                    <button id="btnNextPreview" class="btn btn-secondary btn-small" data-i18n="nextPreviewBtn">Next &#x25B6;</button>
                 </div>
                 <div id="previewEmail" class="email-preview"></div>
             </div>
 
             <div class="card">
-                <h3>&#x2699;&#xFE0F; Options</h3>
+                <h3>&#x2699;&#xFE0F; <span data-i18n="optionsTitleText">Options</span></h3>
                 <div class="form-group">
-                    <label>Delay between emails (seconds)</label>
+                    <label data-i18n="labelDelay">Delay between emails (seconds)</label>
                     <input type="number" id="sendDelay" class="input input-small" value="1" min="0" max="60"/>
                 </div>
-                <label class="checkbox-row"><input type="checkbox" id="chkDraftOnly"/> &#x1F4DD; Save as Drafts only</label>
-                <label class="checkbox-row"><input type="checkbox" id="chkReadReceipt"/> &#x1F4EC; Request read receipt</label>
-                <label class="checkbox-row"><input type="checkbox" id="chkHighImportance"/> &#x2757; High importance</label>
-                <label class="checkbox-row"><input type="checkbox" id="chkGroupByEmail"/> &#x1F4CA; Group by email (many-to-one)</label>
-                <label class="checkbox-row"><input type="checkbox" id="chkUnsubscribe"/> &#x1F6AB; Add unsubscribe link</label>
+                <label class="checkbox-row"><input type="checkbox" id="chkDraftOnly"/> &#x1F4DD; <span data-i18n="saveDraftsLabel">Save as Drafts only</span></label>
+                <label class="checkbox-row"><input type="checkbox" id="chkReadReceipt"/> &#x1F4EC; <span data-i18n="readReceiptLabel">Request read receipt</span></label>
+                <label class="checkbox-row"><input type="checkbox" id="chkHighImportance"/> &#x2757; <span data-i18n="highImportanceLabel">High importance</span></label>
+                <label class="checkbox-row"><input type="checkbox" id="chkGroupByEmail"/> &#x1F4CA; <span data-i18n="groupByEmailLabel">Group by email (many-to-one)</span></label>
+                <label class="checkbox-row"><input type="checkbox" id="chkUnsubscribe"/> &#x1F6AB; <span data-i18n="unsubscribeLabel">Add unsubscribe link</span></label>
                 <div id="unsubscribeOptions" class="sub-option" style="display:none;">
-                    <input type="email" id="unsubscribeEmail" class="input" placeholder="unsubscribe@company.com" aria-label="Unsubscribe email"/>
+                    <input type="email" id="unsubscribeEmail" class="input" placeholder="unsubscribe@company.com" aria-label="Unsubscribe email" data-i18n-placeholder="unsubscribePlaceholder"/>
                 </div>
 
                 <!-- Feature 3: Email Tracking -->
@@ -493,11 +494,11 @@
 
             <div class="action-group">
                 <div class="form-row">
-                    <button id="btnStep4Back" class="btn btn-secondary">&#x2190; Back</button>
-                    <button id="btnTestEmail" class="btn btn-test">&#x1F9EA; Test</button>
+                    <button id="btnStep4Back" class="btn btn-secondary" data-i18n="backBtn">&#x2190; Back</button>
+                    <button id="btnTestEmail" class="btn btn-test" data-i18n="testBtn">&#x1F9EA; Test</button>
                 </div>
-                <button id="btnSend" class="btn btn-send btn-block">&#x1F680; Send All Emails</button>
-                <small class="shortcut-hint">Ctrl+Enter to send</small>
+                <button id="btnSend" class="btn btn-send btn-block" data-i18n="sendAllBtn">&#x1F680; Send All Emails</button>
+                <small class="shortcut-hint" data-i18n="sendShortcutHint">Ctrl+Enter to send</small>
             </div>
 
             <div id="progressContainer" class="progress-container" role="progressbar" aria-label="Send progress" style="display:none;">
