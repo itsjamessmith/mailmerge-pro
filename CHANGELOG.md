@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.0] - 2026-04-11
+
+### Added (Competitor-Matching Features)
+- **Conditional content** — `{{#if Col}}`, `{{#ifNot Col}}`, `{{#ifEquals Col "val"}}`, `{{#ifNotEquals Col "val"}}` syntax in email body/subject
+- **Email validation** — Validates all recipients before send (empty, invalid format, duplicates) with Send Anyway/Cancel modal
+- **Suppression/blocklist** — Manage blocked emails that auto-skip during send; persists in localStorage
+- **Inline images** — 🖼️ button in rich text toolbar to embed images directly in email body (2MB limit)
+
+### Security & Accessibility
+- **CSP meta tag** — Content-Security-Policy restricting script/connect/frame sources
+- **SRI hashes** — Subresource Integrity (sha384) on SheetJS, MSAL, DOMPurify CDN scripts
+- **Focus trapping** — All 7 modals trap Tab/Shift+Tab focus, Escape key to close
+- **Keyboard navigation** — Collapsible headers and A/B tabs now have tabindex="0", role="button", Enter/Space support
+
+### Performance
+- **Attachment streaming** — Per-recipient attachments read lazily (on-demand base64) instead of pre-loading all into memory
+- **Event delegation** — Attachment lists, template cards, saved list cards use delegated listeners (no leaks on re-render)
+
 ## [1.4.0] - 2026-04-11
 
 ### Added
