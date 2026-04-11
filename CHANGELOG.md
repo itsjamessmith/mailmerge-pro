@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.4.0] - 2026-04-11
+
+### Added
+- Comprehensive README.md with badges, quick start, and full documentation
+- Build pipeline with esbuild, clean-css, html-minifier-terser (34% size reduction)
+- CI/CD via GitHub Actions: lint → build → validate manifest → deploy to Pages
+- Complete i18n coverage (42% → 100%) — all 75+ UI strings translated
+- `data-i18n-placeholder` and `data-i18n-title` support in applyTranslations()
+- `package.json` with build, lint, dev, and clean scripts
+
+### Fixed
+- Dark mode contrast: `--text-muted` #888 → #a0a0a0, `--text-secondary` #bbb → #c8c8c8 (WCAG AA compliant)
+- `--text-primary` #e0e0e0 → #e8e8e8 for better readability
+- `--border-color` #444 → #4a4a4a for clearer separation
+- Duplicate Spanish translation keys (noFileSelected, orDivider)
+
 ## [1.3.0] - 2026-04-11
 
 ### Security

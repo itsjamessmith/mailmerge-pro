@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (syntax + structure)
+        run: npm run lint
+
+      - name: Build (minify)
+        run: npm run build
+
+      - name: Verify dist output
+        run: |
+          test -f dist/taskpane.js || (echo "Missing dist/taskpane.js" && exit 1)
+          test -f dist/taskpane.css || (echo "Missing dist/taskpane.css" && exit 1)
+          test -f dist/taskpane.html || (echo "Missing dist/taskpane.html" && exit 1)
+          test -f dist/manifest.xml || (echo "Missing dist/manifest.xml" && exit 1)
+          echo "✅ All dist files present"
+
+      - name: Report sizes
+        run: |
+          echo "=== Source ==="
+          wc -c taskpane.js taskpane.css taskpane.html
+          echo ""
+          echo "=== Minified ==="
+          wc -c dist/taskpane.js dist/taskpane.css dist/taskpane.html
+
+  validate-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate manifest.xml
+        run: |
+          # Check well-formed XML
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('manifest.xml')
+          root = tree.getroot()
+          ns = {'oa': 'http://schemas.microsoft.com/office/appforoffice/1.1'}
+          # Verify required elements exist
+          assert root.find('.//oa:DisplayName', ns) is not None, 'Missing DisplayName'
+          assert root.find('.//oa:Description', ns) is not None, 'Missing Description'
+          assert root.find('.//oa:IconUrl', ns) is not None, 'Missing IconUrl'
+          assert root.find('.//oa:SourceLocation', ns) is not None, 'Missing SourceLocation'
+          print('✅ manifest.xml validated — all required elements present')
+          "
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [lint-and-build, validate-manifest]
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

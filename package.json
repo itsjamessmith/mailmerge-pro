@@ -1,0 +1,23 @@
+{
+  "name": "mailmerge-pro",
+  "version": "1.4.0",
+  "description": "Personalized bulk email Outlook Web Add-in powered by Microsoft Graph API",
+  "author": "itsjamessmith",
+  "license": "MIT",
+  "homepage": "https://itsjamessmith.github.io/mailmerge-pro/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/itsjamessmith/mailmerge-pro.git"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch",
+    "lint": "node build.js --lint",
+    "clean": "node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist',{recursive:true}); console.log('Cleaned dist/');\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "html-minifier-terser": "^7.2.0",
+    "clean-css": "^5.3.3"
+  }
+}
