@@ -4,6 +4,55 @@
  */
 "use strict";
 
+// ========== Safe Utilities ==========
+function safeJsonParse(str, fallback) {
+    if (!str) return fallback;
+    try { return JSON.parse(str); } catch (e) { console.warn("JSON parse failed, using fallback:", e.message); return fallback; }
+}
+
+function sanitizeHtml(html) {
+    if (typeof DOMPurify !== "undefined") return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    // Fallback: strip script/event attributes if DOMPurify unavailable
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    tmp.querySelectorAll("script,iframe,object,embed,form").forEach(function(el) { el.remove(); });
+    tmp.querySelectorAll("*").forEach(function(el) {
+        Array.from(el.attributes).forEach(function(attr) {
+            if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+        });
+    });
+    return tmp.innerHTML;
+}
+
+// ========== Rate Limiting Engine ==========
+const rateLimiter = {
+    maxPerMinute: 30,
+    windowMs: 60000,
+    timestamps: [],
+    canSend: function() {
+        var now = Date.now();
+        this.timestamps = this.timestamps.filter(function(t) { return now - t < this.windowMs; }.bind(this));
+        return this.timestamps.length < this.maxPerMinute;
+    },
+    waitTime: function() {
+        if (this.canSend()) return 0;
+        var oldest = this.timestamps[0];
+        return Math.max(0, this.windowMs - (Date.now() - oldest) + 100);
+    },
+    record: function() {
+        this.timestamps.push(Date.now());
+    },
+    waitUntilReady: function() {
+        var self = this;
+        return new Promise(function(resolve) {
+            var wait = self.waitTime();
+            if (wait <= 0) { resolve(); return; }
+            console.log("Rate limiter: waiting " + Math.round(wait / 1000) + "s");
+            setTimeout(resolve, wait);
+        });
+    }
+};
+
 // ========== Internationalization (i18n) ==========
 let currentLang = localStorage.getItem("mailmergepro_language") || "en";
 const translations = {
@@ -664,6 +713,9 @@ function initUI() {
     document.getElementById("rateLimitHeader").addEventListener("click", () => toggleCollapsible("rateLimitHeader", "rateLimitBody"));
     updateRateLimitDisplay();
 
+    // Dark mode toggle (bound programmatically for CSP compliance)
+    document.getElementById("darkModeToggle").addEventListener("click", toggleDarkMode);
+
     // Apply i18n
     applyTranslations();
 }
@@ -733,7 +785,7 @@ function insertTextInEditor(text) {
 // ========== Campaign History ==========
 function loadCampaignHistory() {
     const stored = localStorage.getItem("mailmerge-pro-campaigns");
-    const campaigns = stored ? JSON.parse(stored) : [];
+    const campaigns = safeJsonParse(stored, []);
     const sel = document.getElementById("pastCampaigns");
     sel.innerHTML = '<option value="">\u{1F4DC} History</option>';
     campaigns.forEach((c, i) => {
@@ -745,7 +797,7 @@ function loadCampaignHistory() {
 }
 function saveCampaign(name, total, sent, errors, extra) {
     const stored = localStorage.getItem("mailmerge-pro-campaigns");
-    const campaigns = stored ? JSON.parse(stored) : [];
+    const campaigns = safeJsonParse(stored, []);
     const record = {
         name: name || "Untitled",
         date: new Date().toLocaleDateString(),
@@ -766,7 +818,7 @@ function showCampaignDetails() {
     const idx = sel.value;
     if (idx === "") return;
     const stored = localStorage.getItem("mailmerge-pro-campaigns");
-    const campaigns = stored ? JSON.parse(stored) : [];
+    const campaigns = safeJsonParse(stored, []);
     const c = campaigns[parseInt(idx)];
     if (!c) return;
     document.getElementById("campaignDetailContent").innerHTML =
@@ -1244,25 +1296,59 @@ function mergeFieldsWithGroup(template, rows) {
 }
 
 // ========== Graph API Helpers ==========
-async function graphFetch(url, token, method, body) {
-    const options = {
+async function graphFetch(url, token, method, body, _retryCount) {
+    var retryCount = _retryCount || 0;
+    var maxRetries = 3;
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+    var options = {
         method: method || "GET",
-        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        signal: controller.signal
     };
     if (body) options.body = JSON.stringify(body);
-    console.log("Graph " + method + " " + url);
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        let errMsg = "HTTP " + response.status + " " + response.statusText;
-        try { const eb = await response.json(); if (eb.error && eb.error.message) errMsg += ": " + eb.error.message; } catch(_){}
-        if (response.status === 401) throw new Error("SESSION_EXPIRED:" + errMsg);
-        if (response.status === 403) throw new Error("Permission denied. Ask admin to grant required permissions.");
-        if (response.status === 429) throw new Error("THROTTLED:" + errMsg);
-        throw new Error(errMsg);
+    console.log("Graph " + method + " " + url + (retryCount > 0 ? " (retry " + retryCount + ")" : ""));
+    try {
+        var response = await fetch(url, options);
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            var errMsg = "HTTP " + response.status + " " + response.statusText;
+            try { var eb = await response.json(); if (eb.error && eb.error.message) errMsg += ": " + eb.error.message; } catch(_){}
+            if (response.status === 401) throw new Error("SESSION_EXPIRED:" + errMsg);
+            if (response.status === 403) throw new Error("Permission denied. Ask admin to grant required permissions.");
+            if (response.status === 429) {
+                var retryAfter = parseInt(response.headers.get("Retry-After")) || 10;
+                if (retryCount < maxRetries) {
+                    console.warn("Throttled (429). Retry-After: " + retryAfter + "s");
+                    await sleep(retryAfter * 1000);
+                    return graphFetch(url, token, method, body, retryCount + 1);
+                }
+                throw new Error("THROTTLED:" + errMsg);
+            }
+            // Retry on server errors (500, 502, 503, 504)
+            if (response.status >= 500 && retryCount < maxRetries) {
+                var backoff = Math.pow(2, retryCount) * 1000;
+                console.warn("Server error " + response.status + ". Retrying in " + (backoff/1000) + "s...");
+                await sleep(backoff);
+                return graphFetch(url, token, method, body, retryCount + 1);
+            }
+            throw new Error(errMsg);
+        }
+        var ct = response.headers.get("content-type");
+        if (ct && ct.includes("application/json")) return response.json();
+        return null;
+    } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        // Retry on network/timeout errors
+        if ((fetchErr.name === "AbortError" || fetchErr.message === "Failed to fetch") && retryCount < maxRetries) {
+            var backoffMs = Math.pow(2, retryCount) * 1000;
+            console.warn("Network error: " + fetchErr.message + ". Retrying in " + (backoffMs/1000) + "s...");
+            await sleep(backoffMs);
+            return graphFetch(url, token, method, body, retryCount + 1);
+        }
+        if (fetchErr.name === "AbortError") throw new Error("Request timed out after 30 seconds");
+        throw fetchErr;
     }
-    const ct = response.headers.get("content-type");
-    if (ct && ct.includes("application/json")) return response.json();
-    return null;
 }
 
 // ========== Email Building ==========
@@ -1476,6 +1562,17 @@ async function executeMerge(testMode) {
         let sent = 0, errors = 0;
         let abSentA = 0, abSentB = 0, abErrA = 0, abErrB = 0;
         const recipientEmails = [];
+
+        // Checkpoint: save progress so send can resume on page refresh
+        function saveCheckpoint() {
+            try {
+                localStorage.setItem("mailmergepro_checkpoint", JSON.stringify({
+                    sent: sent, errors: errors, lastIndex: 0, results: appState.results.slice(-20),
+                    timestamp: Date.now()
+                }));
+            } catch(e) { /* localStorage full — non-critical */ }
+        }
+
         for (let i = 0; i < total; i++) {
             const item = sendItems[i];
             const toAddr = item.to;
@@ -1508,9 +1605,14 @@ async function executeMerge(testMode) {
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
             if (globalBCC) bccL = bccL ? bccL + ";" + globalBCC : globalBCC;
             const atts = collectAttachmentsForRow(row);
+
+            // Enforce rate limit before each send
+            await rateLimiter.waitUntilReady();
             updateProgress(i, total, modeLabel + " " + (i+1) + " of " + total + " \u2014 " + escapeHtml(toAddr));
+
             try {
                 await sendOneEmail(token, toAddr, ccL, bccL, mSubj, mBody, sendAsHtml, fromAlias, atts, draftOnly, opts);
+                rateLimiter.record();
                 sent++;
                 if (isGroupB) abSentB++; else abSentA++;
                 appState.results.push({ row: i + 2, to: toAddr, status: draftOnly ? "Draft" : "Sent", abGroup: isGroupB ? "B" : "A" });
@@ -1554,9 +1656,13 @@ async function executeMerge(testMode) {
                     console.error("Error sending to " + toAddr + ":", err);
                 }
             }
+            // Checkpoint every 10 emails
+            if (i > 0 && i % 10 === 0) saveCheckpoint();
             if (i < total - 1 && delay > 0) await sleep(delay * 1000);
         }
 
+        // Clear checkpoint on completion
+        localStorage.removeItem("mailmergepro_checkpoint");
         updateProgress(total, total, "Complete!");
         document.getElementById("progressContainer").style.display = "none";
         sendBtn.classList.remove("sending");
@@ -1602,7 +1708,8 @@ function showStatus(message, type) {
     const el = document.getElementById("resultsContainer");
     el.style.display = "block";
     el.className = "results " + (type || "info");
-    el.innerHTML = "<p>" + message + "</p>";
+    el.innerHTML = "<p>" + escapeHtml(message) + "</p>";
+    el.setAttribute("role", "alert");
 }
 
 function hideResults() {
@@ -1729,7 +1836,7 @@ function getBuiltInTemplates() {
 
 function getSavedTemplates() {
     var stored = localStorage.getItem("mailmergepro_templates");
-    return stored ? JSON.parse(stored) : [];
+    return safeJsonParse(stored, []);
 }
 
 function saveTemplatesStorage(templates) {
@@ -1940,7 +2047,7 @@ function showABResults(sentA, errA, sentB, errB) {
 // ========== Feature 5: Contact Groups / Saved Lists ==========
 function getSavedLists() {
     var stored = localStorage.getItem("mailmergepro_contactgroups");
-    return stored ? JSON.parse(stored) : [];
+    return safeJsonParse(stored, []);
 }
 
 function saveSavedListsStorage(lists) {
@@ -2108,7 +2215,7 @@ function initHtmlDragDrop() {
 
 function importHtmlContent(htmlContent) {
     var editor = document.getElementById("emailBody");
-    editor.innerHTML = htmlContent;
+    editor.innerHTML = sanitizeHtml(htmlContent);
     editor.classList.remove("is-empty");
     // Extract merge fields from imported HTML
     var fields = htmlContent.match(/\{([^}]+)\}/g);
@@ -2171,7 +2278,7 @@ function loadSignaturePreview() {
     var preview = document.getElementById("signaturePreview");
     if (!preview) return;
     if (appState.signatureHtml) {
-        preview.innerHTML = appState.signatureHtml;
+        preview.innerHTML = sanitizeHtml(appState.signatureHtml);
         preview.style.display = "block";
     } else {
         preview.style.display = "none";
@@ -2240,7 +2347,7 @@ function closeDashboard() {
 
 function buildDashboard() {
     var stored = localStorage.getItem("mailmerge-pro-campaigns");
-    var campaigns = stored ? JSON.parse(stored) : [];
+    var campaigns = safeJsonParse(stored, []);
 
     // Stats
     var totalCampaigns = campaigns.length;
