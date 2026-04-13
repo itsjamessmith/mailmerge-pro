@@ -5,6 +5,17 @@
 "use strict";
 
 // ========== Safe Utilities ==========
+function safeLocalStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.error("localStorage write failed:", key, e.message);
+        showStatus("⚠️ Storage full. Please delete old templates or contact groups to free space.", "warning");
+        return false;
+    }
+}
+
 function safeJsonParse(str, fallback) {
     if (!str) return fallback;
     try { return JSON.parse(str); } catch (e) { console.warn("JSON parse failed, using fallback:", e.message); return fallback; }
@@ -1163,7 +1174,7 @@ function t(key) {
 
 function setLanguage(lang) {
     currentLang = lang;
-    localStorage.setItem("mailmergepro_language", lang);
+    safeLocalStorageSet("mailmergepro_language", lang);
     applyTranslations();
 }
 
@@ -1203,6 +1214,9 @@ const appState = {
     currentStep: 1,
     headers: [],
     rows: [],
+    filteredRows: null,
+    previewPage: 0,
+    previewPageSize: 50,
     mapping: { to: "", cc: "", bcc: "", subject: "", attachments: "" },
     globalAttachments: new Map(),
     perRecipientFiles: new Map(),
@@ -1258,7 +1272,7 @@ function detectDarkMode(officeInfo) {
 function toggleDarkMode() {
     document.body.classList.toggle("dark-mode");
     const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("mailmergepro_darkmode", String(isDark));
+    safeLocalStorageSet("mailmergepro_darkmode", String(isDark));
     const btn = document.getElementById("darkModeToggle");
     if (btn) btn.textContent = isDark ? "☀️" : "🌙";
 }
@@ -1276,7 +1290,7 @@ function showOnboarding() {
     if (el) el.style.display = "flex";
 }
 function dismissOnboarding() {
-    localStorage.setItem("mailmerge-pro-onboarded", "true");
+    safeLocalStorageSet("mailmerge-pro-onboarded", "true");
     const el = document.getElementById("onboardingOverlay");
     if (el) el.style.display = "none";
 }
@@ -1604,7 +1618,7 @@ function initUI() {
     document.getElementById("chkAutoSignatureInline").checked = appState.autoSignature;
     document.getElementById("chkAutoSignatureInline").addEventListener("change", (e) => {
         appState.autoSignature = e.target.checked;
-        localStorage.setItem("mailmergepro_autosignature", e.target.checked ? "true" : "false");
+        safeLocalStorageSet("mailmergepro_autosignature", e.target.checked ? "true" : "false");
     });
     loadSignaturePreview();
 
@@ -1838,7 +1852,7 @@ function saveCampaign(name, total, sent, errors, extra) {
     };
     campaigns.unshift(record);
     if (campaigns.length > 50) campaigns.length = 50;
-    localStorage.setItem("mailmerge-pro-campaigns", JSON.stringify(campaigns));
+    safeLocalStorageSet("mailmerge-pro-campaigns", JSON.stringify(campaigns));
     loadCampaignHistory();
 }
 function showCampaignDetails() {
@@ -1935,6 +1949,9 @@ function handleFileUpload(e) {
             if (jsonData.length === 0) { showStatus("\u26A0\uFE0F No data rows found.", "warning"); return; }
             appState.headers = Object.keys(jsonData[0]);
             appState.rows = jsonData;
+            appState.filteredRows = null;
+            appState.previewPage = 0;
+            document.getElementById("recipientSearch").value = "";
             renderDataPreview();
             document.getElementById("btnStep1Next").disabled = false;
             document.getElementById("btnSaveCurrentList").disabled = false;
@@ -1950,30 +1967,58 @@ function handleFileUpload(e) {
 }
 
 function renderDataPreview() {
+    const sourceRows = appState.filteredRows || appState.rows;
+    const totalRows = sourceRows.length;
+    const pageSize = appState.previewPageSize;
+    const maxPage = Math.max(0, Math.ceil(totalRows / pageSize) - 1);
+    if (appState.previewPage > maxPage) appState.previewPage = maxPage;
+    const page = appState.previewPage;
+    const start = page * pageSize;
+    const end = Math.min(start + pageSize, totalRows);
+    const pageRows = sourceRows.slice(start, end);
+
     document.getElementById("dataStats").textContent =
         "\u2705 " + appState.rows.length + " recipients, " + appState.headers.length + " columns: " + appState.headers.join(", ");
     let t = "<table><tr>";
     appState.headers.forEach(h => { t += "<th>" + escapeHtml(h) + "</th>"; });
     t += "</tr>";
-    appState.rows.forEach((row, i) => {
-        t += '<tr data-idx="' + i + '">';
+    pageRows.forEach((row, i) => {
+        t += '<tr data-idx="' + (start + i) + '">';
         appState.headers.forEach(h => { t += "<td>" + escapeHtml(String(row[h] || "")) + "</td>"; });
         t += "</tr>";
     });
     t += "</table>";
+    // Pagination controls
+    t += '<div class="pagination-controls" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;">';
+    t += '<span>Showing ' + (totalRows === 0 ? 0 : start + 1) + '-' + end + ' of ' + totalRows + (appState.filteredRows ? ' (filtered)' : '') + '</span>';
+    t += '<span>';
+    t += '<button class="btn btn-secondary btn-small" onclick="prevDataPage()" ' + (page <= 0 ? 'disabled' : '') + '>\u25C0 Previous</button> ';
+    t += '<button class="btn btn-secondary btn-small" onclick="nextDataPage()" ' + (page >= maxPage ? 'disabled' : '') + '>Next \u25B6</button>';
+    t += '</span></div>';
     document.getElementById("previewTable").innerHTML = t;
     document.getElementById("dataPreview").style.display = "block";
-    document.getElementById("recipientSearch").value = "";
+}
+
+function prevDataPage() {
+    if (appState.previewPage > 0) { appState.previewPage--; renderDataPreview(); }
+}
+function nextDataPage() {
+    const sourceRows = appState.filteredRows || appState.rows;
+    const maxPage = Math.max(0, Math.ceil(sourceRows.length / appState.previewPageSize) - 1);
+    if (appState.previewPage < maxPage) { appState.previewPage++; renderDataPreview(); }
 }
 
 function filterRecipients() {
-    const q = document.getElementById("recipientSearch").value.toLowerCase();
-    const rows = document.querySelectorAll("#previewTable table tr[data-idx]");
-    rows.forEach(tr => {
-        if (!q) { tr.classList.remove("hidden-row"); return; }
-        const text = tr.textContent.toLowerCase();
-        tr.classList.toggle("hidden-row", !text.includes(q));
-    });
+    const q = document.getElementById("recipientSearch").value.toLowerCase().trim();
+    if (!q) {
+        appState.filteredRows = null;
+    } else {
+        appState.filteredRows = appState.rows.filter(row => {
+            return appState.headers.some(h => String(row[h] || "").toLowerCase().includes(q));
+        });
+    }
+    appState.previewPage = 0;
+    renderDataPreview();
 }
 
 // ========== Contacts Import ==========
@@ -2025,6 +2070,9 @@ function useSelectedContacts() {
     });
     appState.headers = ["Name", "Email"];
     appState.rows = rows;
+    appState.filteredRows = null;
+    appState.previewPage = 0;
+    document.getElementById("recipientSearch").value = "";
     document.getElementById("contactsPanel").style.display = "none";
     renderDataPreview();
     document.getElementById("btnStep1Next").disabled = false;
@@ -2260,15 +2308,15 @@ function buildPreview() {
         const groupRows = groups.get(keys[idx]);
         row = groupRows[0];
         mergedSubj = appState.mapping.subject
-            ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || subject), groupRows)
-            : mergeFieldsWithGroup(subject, groupRows);
-        mergedBody = mergeFieldsWithGroup(bodyHtml, groupRows);
+            ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || subject), groupRows, false)
+            : mergeFieldsWithGroup(subject, groupRows, false);
+        mergedBody = mergeFieldsWithGroup(bodyHtml, groupRows, sendAsHtml);
     } else {
         row = appState.rows[idx];
         mergedSubj = appState.mapping.subject
-            ? mergeFields(String(row[appState.mapping.subject] || subject), row)
-            : mergeFields(subject, row);
-        mergedBody = mergeFields(bodyHtml, row);
+            ? mergeFields(String(row[appState.mapping.subject] || subject), row, false)
+            : mergeFields(subject, row, false);
+        mergedBody = mergeFields(bodyHtml, row, sendAsHtml);
     }
 
     let p = '<p class="label">Preview (recipient ' + (idx+1) + '):</p>';
@@ -2310,13 +2358,16 @@ function processConditionals(text, row) {
 }
 
 // ========== Merge Engine ==========
-function mergeFields(template, row) {
+function mergeFields(template, row, shouldEscapeHtml) {
     if (!template) return "";
     let result = processConditionals(template, row);
     for (const key of appState.headers) {
         const regex = new RegExp("\\{" + escapeRegExp(key) + "\\}", "g");
         let value = String(row[key] === undefined || row[key] === null ? "" : row[key]);
         if (!value && appState.defaults[key]) value = appState.defaults[key];
+        if (shouldEscapeHtml) {
+            value = value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
         result = result.replace(regex, value);
     }
     return result;
@@ -2333,15 +2384,15 @@ function getGroupedRecipients() {
     return groups;
 }
 
-function mergeFieldsWithGroup(template, rows) {
+function mergeFieldsWithGroup(template, rows, shouldEscapeHtml) {
     if (!template) return "";
     let result = template;
     // Handle {#rows}...{/rows} repeating sections
     result = result.replace(/\{#rows\}([\s\S]*?)\{\/rows\}/g, function(match, inner) {
-        return rows.map(function(row) { return mergeFields(inner, row); }).join("");
+        return rows.map(function(row) { return mergeFields(inner, row, shouldEscapeHtml); }).join("");
     });
     // Replace remaining fields with first row values
-    result = mergeFields(result, rows[0]);
+    result = mergeFields(result, rows[0], shouldEscapeHtml);
     return result;
 }
 
@@ -2439,6 +2490,53 @@ function buildGraphAttachment(att) {
     return { "@odata.type": "#microsoft.graph.fileAttachment", name: att.name, contentType: att.contentType, contentBytes: att.contentBytes };
 }
 
+// Large attachment upload via Graph upload session (>3MB)
+async function uploadLargeAttachment(baseUrl, token, messageId, att) {
+    const contentBytes = att.contentBytes;
+    const sizeInBytes = Math.ceil(contentBytes.length * 3 / 4);
+    // Create upload session
+    const sessionBody = {
+        AttachmentItem: {
+            "@odata.type": "microsoft.graph.fileAttachment",
+            name: att.name,
+            size: sizeInBytes,
+            contentType: att.contentType || "application/octet-stream"
+        }
+    };
+    const session = await graphFetch(
+        baseUrl + "/messages/" + encodeURIComponent(messageId) + "/attachments/createUploadSession",
+        token, "POST", sessionBody
+    );
+    const uploadUrl = session.uploadUrl;
+    // Decode base64 to binary
+    const binaryStr = atob(contentBytes);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    // Upload in chunks of ~3.1MB
+    const chunkSize = 3276800;
+    let offset = 0;
+    while (offset < bytes.length) {
+        const end = Math.min(offset + chunkSize, bytes.length);
+        const chunk = bytes.slice(offset, end);
+        const resp = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/octet-stream",
+                "Content-Length": String(chunk.length),
+                "Content-Range": "bytes " + offset + "-" + (end - 1) + "/" + bytes.length
+            },
+            body: chunk
+        });
+        if (!resp.ok && resp.status !== 200 && resp.status !== 201) {
+            let errMsg = "Upload chunk failed: HTTP " + resp.status;
+            try { const eb = await resp.json(); if (eb.error && eb.error.message) errMsg += ": " + eb.error.message; } catch(_){}
+            throw new Error(errMsg);
+        }
+        offset = end;
+    }
+    console.log("Large attachment uploaded:", att.name, sizeInBytes, "bytes");
+}
+
 async function collectAttachmentsForRow(row) {
     const attachments = [];
     // Add global attachments (already cached with content)
@@ -2485,8 +2583,13 @@ async function sendOneEmail(token, to, cc, bcc, subject, body, asHtml, fromAlias
     const msgId = draft.id;
     console.log("Created draft:", msgId);
     for (const att of attachments) {
-        await graphFetch(baseUrl + "/messages/" + encodeURIComponent(msgId) + "/attachments", token, "POST", buildGraphAttachment(att));
-        console.log("Added attachment:", att.name);
+        const rawSizeBytes = Math.ceil((att.contentBytes || "").length * 3 / 4);
+        if (rawSizeBytes < 3000000) {
+            await graphFetch(baseUrl + "/messages/" + encodeURIComponent(msgId) + "/attachments", token, "POST", buildGraphAttachment(att));
+        } else {
+            await uploadLargeAttachment(baseUrl, token, msgId, att);
+        }
+        console.log("Added attachment:", att.name, "(" + rawSizeBytes + " bytes)");
     }
     if (!draftOnly) {
         await graphFetch(baseUrl + "/messages/" + encodeURIComponent(msgId) + "/send", token, "POST", null);
@@ -2558,14 +2661,14 @@ function addToSuppressionList(email) {
     const normalized = email.toLowerCase().trim();
     if (normalized && !list.includes(normalized)) {
         list.push(normalized);
-        localStorage.setItem('mmPro_suppressionList', JSON.stringify(list));
+        safeLocalStorageSet('mmPro_suppressionList', JSON.stringify(list));
     }
     renderSuppressionList();
 }
 function removeFromSuppressionList(email) {
     let list = getSuppressionList();
     list = list.filter(e => e !== email.toLowerCase().trim());
-    localStorage.setItem('mmPro_suppressionList', JSON.stringify(list));
+    safeLocalStorageSet('mmPro_suppressionList', JSON.stringify(list));
     renderSuppressionList();
 }
 function renderSuppressionList() {
@@ -2691,8 +2794,8 @@ async function executeMerge(testMode) {
             }
             updateProgress(0, 1, modeLabel + ": sending to " + testTo + "...");
             const row = appState.rows[0];
-            const mSubj = appState.mapping.subject ? mergeFields(String(row[appState.mapping.subject] || subject), row) : mergeFields(subject, row);
-            const mBody = sendAsHtml ? mergeFields(bodyContent + signatureBlock, row) : mergeFields(plainBody + signatureBlock, row);
+            const mSubj = appState.mapping.subject ? mergeFields(String(row[appState.mapping.subject] || subject), row, false) : mergeFields(subject, row, false);
+            const mBody = sendAsHtml ? mergeFields(bodyContent + signatureBlock, row, true) : mergeFields(plainBody + signatureBlock, row, false);
             let ccL = ""; if (appState.mapping.cc && row[appState.mapping.cc]) ccL = String(row[appState.mapping.cc]);
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
@@ -2718,12 +2821,10 @@ async function executeMerge(testMode) {
 
         // Checkpoint: save progress so send can resume on page refresh
         function saveCheckpoint() {
-            try {
-                localStorage.setItem("mailmergepro_checkpoint", JSON.stringify({
-                    sent: sent, errors: errors, lastIndex: 0, results: appState.results.slice(-20),
-                    timestamp: Date.now()
-                }));
-            } catch(e) { /* localStorage full — non-critical */ }
+            safeLocalStorageSet("mailmergepro_checkpoint", JSON.stringify({
+                sent: sent, errors: errors, lastIndex: 0, results: appState.results.slice(-20),
+                timestamp: Date.now()
+            }));
         }
 
         for (let i = 0; i < total; i++) {
@@ -2753,16 +2854,29 @@ async function executeMerge(testMode) {
             const row = item.rows[0];
             const isGroup = item.rows.length > 1;
             const mSubj = appState.mapping.subject
-                ? (isGroup ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || activeSubject), item.rows) : mergeFields(String(row[appState.mapping.subject] || activeSubject), row))
-                : (isGroup ? mergeFieldsWithGroup(activeSubject, item.rows) : mergeFields(activeSubject, row));
+                ? (isGroup ? mergeFieldsWithGroup(String(row[appState.mapping.subject] || activeSubject), item.rows, false) : mergeFields(String(row[appState.mapping.subject] || activeSubject), row, false))
+                : (isGroup ? mergeFieldsWithGroup(activeSubject, item.rows, false) : mergeFields(activeSubject, row, false));
             const mBody = isGroup
-                ? (sendAsHtml ? mergeFieldsWithGroup(activeBodyHtml, item.rows) : mergeFieldsWithGroup(activeBodyPlain, item.rows))
-                : (sendAsHtml ? mergeFields(activeBodyHtml, row) : mergeFields(activeBodyPlain, row));
+                ? (sendAsHtml ? mergeFieldsWithGroup(activeBodyHtml, item.rows, true) : mergeFieldsWithGroup(activeBodyPlain, item.rows, false))
+                : (sendAsHtml ? mergeFields(activeBodyHtml, row, true) : mergeFields(activeBodyPlain, row, false));
             let ccL = ""; if (appState.mapping.cc && row[appState.mapping.cc]) ccL = String(row[appState.mapping.cc]);
             if (globalCC) ccL = ccL ? ccL + ";" + globalCC : globalCC;
             let bccL = ""; if (appState.mapping.bcc && row[appState.mapping.bcc]) bccL = String(row[appState.mapping.bcc]);
             if (globalBCC) bccL = bccL ? bccL + ";" + globalBCC : globalBCC;
-            const atts = await collectAttachmentsForRow(row);
+            // Collect attachments from ALL rows in the group, deduped by name
+            let atts;
+            if (item.rows.length > 1) {
+                const allAttachments = new Map();
+                for (const groupRow of item.rows) {
+                    const rowAttachments = await collectAttachmentsForRow(groupRow);
+                    rowAttachments.forEach(att => {
+                        if (!allAttachments.has(att.name)) allAttachments.set(att.name, att);
+                    });
+                }
+                atts = Array.from(allAttachments.values());
+            } else {
+                atts = await collectAttachmentsForRow(row);
+            }
 
             // Enforce rate limit before each send
             await rateLimiter.waitUntilReady();
@@ -2998,7 +3112,7 @@ function getSavedTemplates() {
 }
 
 function saveTemplatesStorage(templates) {
-    localStorage.setItem("mailmergepro_templates", JSON.stringify(templates));
+    safeLocalStorageSet("mailmergepro_templates", JSON.stringify(templates));
 }
 
 function loadTemplatesUI() {
@@ -3093,7 +3207,7 @@ function scheduleSend() {
 
     appState.scheduledTime = scheduledDate;
     // Store in localStorage for interrupted detection
-    localStorage.setItem("mailmergepro_scheduled", JSON.stringify({
+    safeLocalStorageSet("mailmergepro_scheduled", JSON.stringify({
         time: scheduledDate.toISOString(),
         campaign: document.getElementById("campaignName").value || "Untitled"
     }));
@@ -3212,7 +3326,7 @@ function saveSavedListsStorage(lists) {
     if (json.length > 3 * 1024 * 1024) {
         showStatus(t("sizeWarning"), "warning");
     }
-    localStorage.setItem("mailmergepro_contactgroups", json);
+    safeLocalStorageSet("mailmergepro_contactgroups", json);
 }
 
 function loadSavedListsUI() {
@@ -3424,8 +3538,8 @@ function saveSignature() {
     var autoAppend = document.getElementById("chkAutoSignature").checked;
     appState.signatureHtml = content;
     appState.autoSignature = autoAppend;
-    localStorage.setItem("mailmergepro_signature", content);
-    localStorage.setItem("mailmergepro_autosignature", autoAppend ? "true" : "false");
+    safeLocalStorageSet("mailmergepro_signature", content);
+    safeLocalStorageSet("mailmergepro_autosignature", autoAppend ? "true" : "false");
     document.getElementById("signatureDialog").style.display = "none";
     releaseFocus();
     document.getElementById("chkAutoSignatureInline").checked = autoAppend;
@@ -3461,7 +3575,7 @@ function getDailySentCount() {
 function updateDailySentCount(count) {
     var today = new Date().toDateString();
     var current = getDailySentCount();
-    localStorage.setItem("mailmergepro_dailysent", JSON.stringify({
+    safeLocalStorageSet("mailmergepro_dailysent", JSON.stringify({
         date: today,
         count: current + count
     }));
