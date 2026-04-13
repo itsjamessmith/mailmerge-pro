@@ -1358,7 +1358,7 @@ async function signIn() {
         }
     }
     try {
-        // Proactively clear any stuck MSAL interaction state from prior failed popups
+        // Clear any stuck MSAL interaction state
         try {
             const keys = Object.keys(sessionStorage);
             keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
@@ -1371,35 +1371,34 @@ async function signIn() {
                 const result = await msalInstance.acquireTokenSilent({ ...loginRequest, account: activeAccount });
                 updateAuthUI(activeAccount);
                 return result.accessToken;
-            } catch (_) { /* silent failed, proceed to popup */ }
+            } catch (_) { /* silent failed, proceed to interactive */ }
         }
-        const result = await msalInstance.acquireTokenPopup(loginRequest);
-        console.log("signIn success:", result.account.username);
-        updateAuthUI(result.account);
-        return result.accessToken;
+
+        // Detect if running inside Outlook task pane (iframe/popup context)
+        const isInIframe = (window !== window.parent) || (typeof Office !== "undefined" && Office.context);
+        
+        if (isInIframe) {
+            // Use redirect flow — popups are blocked inside Outlook task pane
+            console.log("signIn: detected task pane/iframe, using redirect flow");
+            authEl.textContent = "Redirecting to sign in...";
+            authEl.classList.remove("error");
+            await msalInstance.acquireTokenRedirect(loginRequest);
+            return; // Page will redirect — execution stops here
+        } else {
+            // Use popup flow — works in standalone browser
+            const result = await msalInstance.acquireTokenPopup(loginRequest);
+            console.log("signIn success (popup):", result.account.username);
+            updateAuthUI(result.account);
+            return result.accessToken;
+        }
     } catch (err) {
         console.error("signIn error:", err);
-        // Clear stuck interaction state on any error for next attempt
         try {
             const keys = Object.keys(sessionStorage);
             keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
         } catch (_) {}
         const msg = err.message || String(err);
-        if (msg.includes("block_nested_popups") || msg.includes("popup_window_error") || msg.includes("monitor_window_timeout")) {
-            // Popup blocked inside Outlook taskpane — use redirect flow instead
-            console.log("signIn: popup blocked, switching to redirect flow");
-            authEl.textContent = "Redirecting to sign in...";
-            authEl.classList.remove("error");
-            try {
-                await msalInstance.acquireTokenRedirect(loginRequest);
-                return; // Page will redirect
-            } catch (redirectErr) {
-                console.error("signIn redirect error:", redirectErr);
-                authEl.textContent = t("authFailed") + ": " + (redirectErr.message || String(redirectErr)).substring(0, 120);
-                authEl.classList.add("error");
-                throw redirectErr;
-            }
-        } else if (msg.includes("interaction_in_progress")) {
+        if (msg.includes("interaction_in_progress")) {
             authEl.textContent = t("signIn") + " — " + t("error") + ". Please try again.";
         } else if (msg.includes("popup_window_error")) {
             authEl.textContent = "Pop-up blocked. Allow pop-ups and try again.";
