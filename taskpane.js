@@ -1243,6 +1243,16 @@ Office.onReady(async function (info) {
     await initMsal();
     initUI();
     showOnboarding();
+    // Delayed auth recheck — handleRedirectPromise may still be processing
+    setTimeout(() => {
+        if (msalInstance) {
+            const accounts = msalInstance.getAllAccounts();
+            if (accounts.length > 0 && !appState.userEmail) {
+                console.log("Delayed auth recheck: found account", accounts[0].username);
+                updateAuthUI(accounts[0]);
+            }
+        }
+    }, 3000);
 });
 if (typeof Office === "undefined") {
     document.addEventListener("DOMContentLoaded", async () => {
