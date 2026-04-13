@@ -1243,16 +1243,30 @@ Office.onReady(async function (info) {
     await initMsal();
     initUI();
     showOnboarding();
-    // Delayed auth recheck — handleRedirectPromise may still be processing
-    setTimeout(() => {
-        if (msalInstance) {
-            const accounts = msalInstance.getAllAccounts();
-            if (accounts.length > 0 && !appState.userEmail) {
-                console.log("Delayed auth recheck: found account", accounts[0].username);
-                updateAuthUI(accounts[0]);
-            }
+    // Delayed auth check — fetch email from Graph API if MSAL account is incomplete
+    setTimeout(async () => {
+        if (!appState.userEmail && msalInstance) {
+            try {
+                const token = await getGraphToken();
+                if (token) {
+                    const resp = await fetch(GRAPH_BASE + "/me?$select=mail,userPrincipalName,displayName", {
+                        headers: { "Authorization": "Bearer " + token }
+                    });
+                    if (resp.ok) {
+                        const me = await resp.json();
+                        const email = me.mail || me.userPrincipalName || me.displayName || "Signed in";
+                        console.log("Graph /me resolved:", email);
+                        appState.userEmail = email;
+                        const authEl = document.getElementById("authStatus");
+                        authEl.textContent = "✅ " + email;
+                        authEl.classList.add("signed-in");
+                        document.getElementById("btnSignIn").style.display = "none";
+                        document.getElementById("btnSignOut").style.display = "inline-block";
+                    }
+                }
+            } catch (e) { console.warn("Delayed Graph /me check failed:", e.message); }
         }
-    }, 3000);
+    }, 2000);
 });
 if (typeof Office === "undefined") {
     document.addEventListener("DOMContentLoaded", async () => {
