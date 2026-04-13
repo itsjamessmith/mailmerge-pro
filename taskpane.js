@@ -1362,12 +1362,15 @@ function updateAuthUI(account) {
     const btnIn = document.getElementById("btnSignIn");
     const btnOut = document.getElementById("btnSignOut");
     if (account) {
-        authEl.textContent = account.username;
+        // MSAL account may have username, name, or localAccountId — try all
+        const displayName = account.username || account.name || account.localAccountId || account.homeAccountId || "Signed in";
+        console.log("updateAuthUI: signed in as", displayName, "| account keys:", Object.keys(account).join(","));
+        authEl.textContent = "✅ " + displayName;
         authEl.classList.add("signed-in");
         authEl.classList.remove("error");
         btnIn.style.display = "none";
         btnOut.style.display = "inline-block";
-        appState.userEmail = account.username;
+        appState.userEmail = account.username || account.name || "";
     } else {
         authEl.textContent = t("notSignedIn");
         authEl.classList.remove("signed-in");
