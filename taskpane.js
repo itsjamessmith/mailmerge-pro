@@ -1300,7 +1300,11 @@ async function initMsal() {
         console.log("MSAL initialized");
         try {
             const resp = await msalInstance.handleRedirectPromise();
-            if (resp) console.log("handleRedirectPromise: got token for", resp.account.username);
+            if (resp && resp.account) {
+                console.log("handleRedirectPromise: signed in via redirect:", resp.account.username);
+                updateAuthUI(resp.account);
+                return;
+            }
         } catch (e) { console.warn("handleRedirectPromise error:", e); }
         const accounts = msalInstance.getAllAccounts();
         if (accounts.length > 0) {
@@ -1381,7 +1385,21 @@ async function signIn() {
             keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
         } catch (_) {}
         const msg = err.message || String(err);
-        if (msg.includes("interaction_in_progress")) {
+        if (msg.includes("block_nested_popups") || msg.includes("popup_window_error") || msg.includes("monitor_window_timeout")) {
+            // Popup blocked inside Outlook taskpane — use redirect flow instead
+            console.log("signIn: popup blocked, switching to redirect flow");
+            authEl.textContent = "Redirecting to sign in...";
+            authEl.classList.remove("error");
+            try {
+                await msalInstance.acquireTokenRedirect(loginRequest);
+                return; // Page will redirect
+            } catch (redirectErr) {
+                console.error("signIn redirect error:", redirectErr);
+                authEl.textContent = t("authFailed") + ": " + (redirectErr.message || String(redirectErr)).substring(0, 120);
+                authEl.classList.add("error");
+                throw redirectErr;
+            }
+        } else if (msg.includes("interaction_in_progress")) {
             authEl.textContent = t("signIn") + " — " + t("error") + ". Please try again.";
         } else if (msg.includes("popup_window_error")) {
             authEl.textContent = "Pop-up blocked. Allow pop-ups and try again.";
