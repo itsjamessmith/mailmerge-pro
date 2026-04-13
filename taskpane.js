@@ -1312,28 +1312,38 @@ async function initMsal() {
         msalInstance = new msal.PublicClientApplication(msalConfig);
         await msalInstance.initialize();
         console.log("MSAL initialized");
+        
+        // handleRedirectPromise with timeout — can hang after redirect in Outlook
         try {
-            const resp = await msalInstance.handleRedirectPromise();
+            const redirectPromise = msalInstance.handleRedirectPromise();
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
+            const resp = await Promise.race([redirectPromise, timeoutPromise]);
             if (resp && resp.account) {
                 console.log("handleRedirectPromise: signed in via redirect:", resp.account.username);
                 updateAuthUI(resp.account);
                 return;
             }
-        } catch (e) { console.warn("handleRedirectPromise error:", e); }
+        } catch (e) {
+            console.warn("handleRedirectPromise error/timeout:", e.message || e);
+        }
+        
+        // Check if already signed in (from cached session)
         const accounts = msalInstance.getAllAccounts();
         if (accounts.length > 0) {
             console.log("Already signed in:", accounts[0].username);
             updateAuthUI(accounts[0]);
         } else {
             authEl.textContent = t("notSignedIn");
+            authEl.classList.remove("error");
             btnIn.style.display = "inline-block";
             btnOut.style.display = "none";
         }
     } catch (err) {
         console.error("MSAL init error:", err);
-        authEl.textContent = "Auth init failed";
-        authEl.classList.add("error");
+        authEl.textContent = t("notSignedIn");
+        authEl.classList.remove("error");
         btnIn.style.display = "inline-block";
+        btnOut.style.display = "none";
     }
 }
 
