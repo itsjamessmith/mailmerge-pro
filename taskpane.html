@@ -9,9 +9,9 @@
     <!-- CSP removed: Office.js add-ins run in a trusted Microsoft iframe; restrictive CSP blocks Office.js host communication -->
     <title>MailMerge-Pro</title>
     <link rel="stylesheet" href="taskpane.css"/>
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" crossorigin="anonymous"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -157,6 +157,7 @@
             <span id="authStatus" class="auth-status" data-i18n="notSignedIn">Not signed in</span>
             <button id="btnSignIn" class="btn btn-primary btn-small" data-i18n="signIn">Sign In</button>
             <button id="btnSignOut" class="btn btn-secondary btn-small" style="display:none;" data-i18n="signOut">Sign Out</button>
+            <label class="clear-data-label" style="display:none;" id="clearDataLabel"><input type="checkbox" id="chkClearDataOnSignOut" checked /> Clear saved data on sign out</label>
         </div>
 
         <!-- Step indicator -->

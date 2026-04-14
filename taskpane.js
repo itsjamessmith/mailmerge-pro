@@ -29,9 +29,13 @@ function sanitizeHtml(html) {
     tmp.querySelectorAll("script,iframe,object,embed,form").forEach(function(el) { el.remove(); });
     tmp.querySelectorAll("*").forEach(function(el) {
         Array.from(el.attributes).forEach(function(attr) {
-            if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+            if (attr.name.startsWith("on") || attr.value.startsWith("javascript:")) {
+                el.removeAttribute(attr.name);
+            }
         });
     });
+    // Remove javascript: links
+    tmp.querySelectorAll('a[href^="javascript:"]').forEach(function(el) { el.removeAttribute("href"); });
     return tmp.innerHTML;
 }
 
@@ -1203,7 +1207,7 @@ const msalConfig = {
         authority: "https://login.microsoftonline.com/e67c588e-f654-4727-b794-1ca5df7b6ee9",
         redirectUri: "https://itsjamessmith.github.io/mailmerge-pro/taskpane.html"
     },
-    cache: { cacheLocation: "localStorage" }
+    cache: { cacheLocation: "sessionStorage" }
 };
 const loginRequest = { scopes: ["Mail.Send", "Mail.ReadWrite", "User.Read", "Contacts.Read", "Mail.Send.Shared"] };
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
@@ -1269,11 +1273,9 @@ Office.onReady(async function (info) {
     }, 2000);
 });
 if (typeof Office === "undefined") {
-    document.addEventListener("DOMContentLoaded", async () => {
-        detectDarkMode(null);
-        await initMsal();
-        initUI();
-        showOnboarding();
+    // Refuse to run outside Outlook — do NOT call initMsal or initUI
+    document.addEventListener("DOMContentLoaded", () => {
+        document.body.innerHTML = '<div style="padding:20px;text-align:center;"><h2>MailMerge-Pro</h2><p>This add-in must be opened from within Microsoft Outlook.</p></div>';
     });
 }
 
@@ -1396,6 +1398,7 @@ function updateAuthUI(account) {
     const authEl = document.getElementById("authStatus");
     const btnIn = document.getElementById("btnSignIn");
     const btnOut = document.getElementById("btnSignOut");
+    const clearDataLabel = document.getElementById("clearDataLabel");
     if (account) {
         // MSAL account may have username, name, or localAccountId — try all
         const displayName = account.username || account.name || account.localAccountId || account.homeAccountId || "Signed in";
@@ -1405,12 +1408,14 @@ function updateAuthUI(account) {
         authEl.classList.remove("error");
         btnIn.style.display = "none";
         btnOut.style.display = "inline-block";
+        if (clearDataLabel) clearDataLabel.style.display = "inline-block";
         appState.userEmail = account.username || account.name || "";
     } else {
         authEl.textContent = t("notSignedIn");
         authEl.classList.remove("signed-in");
         btnIn.style.display = "inline-block";
         btnOut.style.display = "none";
+        if (clearDataLabel) clearDataLabel.style.display = "none";
         appState.userEmail = "";
     }
 }
@@ -1532,7 +1537,24 @@ async function signOut() {
         console.warn("signOut error:", err);
     }
     
+    // Clear all MailMerge-Pro data from localStorage if user opted in (default: ON)
+    const clearDataCheckbox = document.getElementById("chkClearDataOnSignOut");
+    if (!clearDataCheckbox || clearDataCheckbox.checked) {
+        try {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith("mailmergepro_") || key.startsWith("mailmerge-pro")) {
+                    localStorage.removeItem(key);
+                }
+            });
+            console.log("signOut: cleared MailMerge-Pro app data from localStorage");
+        } catch (e) {
+            console.warn("signOut: app data clear failed:", e.message);
+        }
+    }
+
     appState.userEmail = "";
+    appState.signatureHtml = "";
+    appState.autoSignature = false;
     updateAuthUI(null);
     console.log("signOut: complete");
 }
@@ -1848,6 +1870,16 @@ function insertLink() {
     document.getElementById("linkDialog").style.display = "none";
     releaseFocus();
     if (url) {
+        // Validate URL scheme — reject dangerous protocols
+        const forbidden = /^(javascript|data|vbscript):/i;
+        if (forbidden.test(url)) {
+            showStatus("⚠️ Links with javascript:, data:, or vbscript: are not allowed.", "warning");
+            return;
+        }
+        if (!/^(https?:\/\/|mailto:)/i.test(url)) {
+            showStatus("⚠️ Please enter a URL starting with https://, http://, or mailto:", "warning");
+            return;
+        }
         document.getElementById("emailBody").focus();
         document.execCommand("createLink", false, url);
     }
@@ -2766,9 +2798,10 @@ async function executeMerge(testMode) {
         // Auto-append signature if enabled
         let signatureBlock = "";
         if (appState.autoSignature && appState.signatureHtml) {
+            const sanitizedSig = sanitizeHtml(appState.signatureHtml);
             signatureBlock = sendAsHtml
-                ? '<br/><div class="email-signature">' + appState.signatureHtml + '</div>'
-                : "\n\n" + appState.signatureHtml;
+                ? '<br/><div class="email-signature">' + sanitizedSig + '</div>'
+                : "\n\n" + sanitizedSig;
         }
 
         // A/B test config
@@ -3208,7 +3241,7 @@ function loadTemplatesUI() {
 function loadTemplate(tmpl) {
     document.getElementById("emailSubject").value = tmpl.subject || "";
     var editor = document.getElementById("emailBody");
-    editor.innerHTML = tmpl.body || "";
+    editor.innerHTML = sanitizeHtml(tmpl.body || "");
     editor.classList.remove("is-empty");
 }
 
