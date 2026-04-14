@@ -1321,37 +1321,58 @@ function dismissOnboarding() {
 
 // ========== MSAL Initialization ==========
 async function initMsal() {
-    console.log("initMsal: creating PublicClientApplication");
+    console.log("initMsal: starting");
     const authEl = document.getElementById("authStatus");
     const btnIn = document.getElementById("btnSignIn");
     const btnOut = document.getElementById("btnSignOut");
-    if (typeof msal === "undefined" || !msal.PublicClientApplication) {
+    
+    if (typeof msal === "undefined") {
         console.error("MSAL library not loaded");
         authEl.textContent = "Auth library not loaded. Refresh page.";
         authEl.classList.add("error");
         btnIn.style.display = "inline-block";
         return;
     }
+    
     try {
-        msalInstance = new msal.PublicClientApplication(msalConfig);
-        await msalInstance.initialize();
-        console.log("MSAL initialized");
-        
-        // handleRedirectPromise with timeout — can hang after redirect in Outlook
-        try {
-            const redirectPromise = msalInstance.handleRedirectPromise();
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
-            const resp = await Promise.race([redirectPromise, timeoutPromise]);
-            if (resp && resp.account) {
-                console.log("handleRedirectPromise: signed in via redirect:", resp.account.username);
-                updateAuthUI(resp.account);
-                return;
+        // Try Nested App Authentication (NAA) first — works inside Outlook task pane
+        if (msal.createNestablePublicClientApplication) {
+            console.log("initMsal: using NAA (createNestablePublicClientApplication)");
+            try {
+                msalInstance = await msal.createNestablePublicClientApplication(msalConfig);
+                console.log("initMsal: NAA initialized successfully");
+            } catch (naaErr) {
+                console.warn("initMsal: NAA failed, falling back to standard MSAL:", naaErr.message);
+                msalInstance = null;
             }
-        } catch (e) {
-            console.warn("handleRedirectPromise error/timeout:", e.message || e);
         }
         
-        // Check if already signed in (from cached session)
+        // Fallback to standard PublicClientApplication
+        if (!msalInstance && msal.PublicClientApplication) {
+            console.log("initMsal: using standard PublicClientApplication");
+            msalInstance = new msal.PublicClientApplication(msalConfig);
+            await msalInstance.initialize();
+            
+            // Handle redirect promise with timeout
+            try {
+                const redirectPromise = msalInstance.handleRedirectPromise();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000));
+                const resp = await Promise.race([redirectPromise, timeoutPromise]);
+                if (resp && resp.account) {
+                    console.log("handleRedirectPromise: signed in via redirect:", resp.account.username);
+                    updateAuthUI(resp.account);
+                    return;
+                }
+            } catch (e) {
+                console.warn("handleRedirectPromise error/timeout:", e.message || e);
+            }
+        }
+        
+        if (!msalInstance) {
+            throw new Error("Could not initialize MSAL (NAA or standard)");
+        }
+        
+        // Check for cached accounts
         const accounts = msalInstance.getAllAccounts();
         if (accounts.length > 0) {
             console.log("Already signed in:", accounts[0].username);
@@ -1395,70 +1416,66 @@ function updateAuthUI(account) {
 }
 
 async function signIn() {
-    console.log("signIn: starting interactive login");
+    console.log("signIn: starting");
     const authEl = document.getElementById("authStatus");
+    
+    // Re-initialize MSAL if needed
     if (!msalInstance) {
-        try {
-            msalInstance = new msal.PublicClientApplication(msalConfig);
-            await msalInstance.initialize();
-            await msalInstance.handleRedirectPromise().catch(() => {});
-        } catch (e) {
-            authEl.textContent = t("authFailed") + ": " + (e.message || String(e));
+        await initMsal();
+        if (!msalInstance) {
+            authEl.textContent = t("authFailed") + ": MSAL not available";
             authEl.classList.add("error");
             return;
         }
     }
+    
     try {
-        // Clear any stuck MSAL interaction state
+        // Clear any stuck interaction state
         try {
-            const keys = Object.keys(sessionStorage);
-            keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
+            Object.keys(sessionStorage).forEach(k => { 
+                if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); 
+            });
         } catch (_) {}
 
-        // Try silent token first if there's an active account
-        const activeAccount = msalInstance.getActiveAccount();
-        if (activeAccount) {
+        // Step 1: Try silent token (works if already signed in)
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
             try {
-                const result = await msalInstance.acquireTokenSilent({ ...loginRequest, account: activeAccount });
-                updateAuthUI(activeAccount);
+                const result = await msalInstance.acquireTokenSilent({ ...loginRequest, account: accounts[0] });
+                console.log("signIn: silent token acquired for", accounts[0].username);
+                updateAuthUI(accounts[0]);
                 return result.accessToken;
-            } catch (_) { /* silent failed, proceed to interactive */ }
+            } catch (e) { 
+                console.warn("signIn: silent failed:", e.message); 
+            }
         }
 
-        // Detect if running inside Outlook task pane (iframe/popup context)
-        const isInIframe = (window !== window.parent) || (typeof Office !== "undefined" && Office.context);
+        // Step 2: Interactive sign-in via popup
+        // With NAA (createNestablePublicClientApplication), popup works inside Outlook iframe
+        console.log("signIn: attempting acquireTokenPopup");
+        authEl.textContent = "Signing in...";
+        authEl.classList.remove("error");
+        const result = await msalInstance.acquireTokenPopup(loginRequest);
+        console.log("signIn: popup success:", result.account.username || result.account.name);
+        updateAuthUI(result.account);
+        return result.accessToken;
         
-        if (isInIframe) {
-            // Use redirect flow — popups are blocked inside Outlook task pane
-            console.log("signIn: detected task pane/iframe, using redirect flow");
-            authEl.textContent = "Redirecting to sign in...";
-            authEl.classList.remove("error");
-            await msalInstance.acquireTokenRedirect(loginRequest);
-            return; // Page will redirect — execution stops here
-        } else {
-            // Use popup flow — works in standalone browser
-            const result = await msalInstance.acquireTokenPopup(loginRequest);
-            console.log("signIn success (popup):", result.account.username);
-            updateAuthUI(result.account);
-            return result.accessToken;
-        }
     } catch (err) {
         console.error("signIn error:", err);
+        // Clear stuck state
         try {
-            const keys = Object.keys(sessionStorage);
-            keys.forEach(k => { if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); });
+            Object.keys(sessionStorage).forEach(k => { 
+                if (k.indexOf("interaction") !== -1) sessionStorage.removeItem(k); 
+            });
         } catch (_) {}
+        
         const msg = err.message || String(err);
         if (msg.includes("interaction_in_progress")) {
-            authEl.textContent = t("signIn") + " — " + t("error") + ". Please try again.";
-        } else if (msg.includes("popup_window_error")) {
-            authEl.textContent = "Pop-up blocked. Allow pop-ups and try again.";
+            authEl.textContent = "Please try again.";
         } else if (msg.includes("user_cancelled")) {
-            authEl.textContent = "Sign-in cancelled.";
-        } else if (msg.includes("AADSTS50020") || msg.includes("AADSTS700016")) {
-            authEl.textContent = "Account not authorized for this app. Check your tenant.";
+            authEl.textContent = "Sign-in cancelled. Click Sign In to retry.";
         } else {
-            authEl.textContent = t("authFailed") + ": " + msg.substring(0, 120);
+            authEl.textContent = "❌ " + msg.substring(0, 150);
         }
         authEl.classList.add("error");
         throw err;
