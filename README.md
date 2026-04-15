@@ -45,10 +45,13 @@ MailMerge-Pro is a free, open-source Outlook Web Add-in that lets you send perso
 
 ### Security & Resilience
 - 🔒 **DOMPurify** — HTML sanitization prevents XSS attacks
+- 🔐 **XSS Protection** — `sanitizeHtml()` strips script tags, iframes, event handlers, javascript: URLs from all HTML content
 - 🔄 **Auto-Retry** — Exponential backoff for network/server errors
 - ⏱️ **Rate Limiting** — Token bucket enforces 30 emails/min
 - 💾 **Checkpointing** — Send progress saved; resume after interruption
-- 🛡️ **MSAL Authentication** — OAuth 2.0 with PKCE, no secrets stored
+- 🛡️ **NAA Authentication** — Nested App Authentication (Microsoft-recommended for 2025+) via MSAL.js v3.27.0 with OAuth 2.0 + PKCE
+- 🔑 **sessionStorage tokens** — Authentication tokens stored in sessionStorage, auto-cleared when tab closes
+- 🚫 **Outlook-only execution** — Add-in refuses to run outside Outlook
 
 ---
 
@@ -185,10 +188,17 @@ MailMerge-Pro enforces Microsoft Graph API limits:
 ## 🔒 Security
 
 - **No server / no backend** — All processing happens in the browser
-- **OAuth 2.0 + PKCE** — Industry-standard authentication via MSAL.js
+- **NAA (Nested App Authentication)** — Microsoft-recommended auth for Office add-ins (2025+), uses `createNestablePublicClientApplication` for seamless SSO in Outlook's task pane
+- **MSAL.js v3.27.0** — Upgraded from v2.35.0; loaded from jsDelivr CDN (`cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0`)
+- **OAuth 2.0 + PKCE** — Industry-standard authentication via Microsoft's identity platform
+- **sessionStorage for tokens** — MSAL cache uses `sessionStorage` instead of `localStorage`; tokens are automatically cleared when the browser tab closes, preventing token theft
+- **XSS Protection** — `sanitizeHtml()` strips script tags, iframes, event handlers, and `javascript:` URLs; merge field values are HTML-escaped; link insertion validates URL schemes
 - **No secrets in code** — Client ID is public; tokens managed by MSAL
 - **DOMPurify** — All user-provided HTML is sanitized before rendering
 - **Safe localStorage** — All JSON parsing wrapped in try/catch
+- **Outlook-only execution** — App refuses to run outside Outlook, blocking standalone browser access
+- **Clean sign-out** — All PII cleared from localStorage on sign-out
+- **CDN integrity** — All CDN scripts have `crossorigin="anonymous"` attribute
 - **CSP-ready** — No inline event handlers
 
 ---
@@ -207,11 +217,13 @@ MailMerge-Pro enforces Microsoft Graph API limits:
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
+*© 2026 MailMerge-Pro. All rights reserved.*
+
 ---
 
 ## 🙏 Acknowledgments
 
-- [MSAL.js](https://github.com/AzureAD/microsoft-authentication-library-for-js) — Microsoft Authentication Library
+- [MSAL.js v3](https://github.com/AzureAD/microsoft-authentication-library-for-js) — Microsoft Authentication Library (NAA with `createNestablePublicClientApplication`)
 - [SheetJS](https://sheetjs.com/) — Excel/CSV parsing
 - [DOMPurify](https://github.com/cure53/DOMPurify) — HTML sanitization
 - [Office.js](https://docs.microsoft.com/en-us/office/dev/add-ins/) — Office Add-in API

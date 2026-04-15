@@ -31,7 +31,10 @@ Before deploying, ensure you have:
   ```
   Or the **manifest XML file** downloaded locally.
 - [ ] Azure AD **app registration** completed (if the add-in requires Graph API permissions)
+- [ ] Azure AD app registration includes the **`brk-multihub://your-domain.com`** SPA redirect URI (required for Nested App Authentication)
 - [ ] Target user groups created in Azure AD (for scoped deployment)
+
+> **Authentication Note:** MailMerge-Pro uses **Nested App Authentication (NAA)** with **MSAL v3.27.0**. NAA is the Microsoft-recommended authentication approach for Office add-ins (2025+). It provides seamless SSO inside Outlook's task pane without popup windows. Ensure the Azure AD app registration has the `brk-multihub://` redirect URI configured — without it, NAA will not work and users may experience authentication failures. Authentication tokens are stored in `sessionStorage` (not `localStorage`), so tokens are automatically cleared when the browser tab closes.
 
 ---
 

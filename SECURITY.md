@@ -48,7 +48,7 @@
 | Email body text | Browser (JavaScript) | Browser memory only | Microsoft Exchange (as email) |
 | Email subject | Browser (JavaScript) | Browser memory only | Microsoft Exchange (as email) |
 | File attachments | Browser (FileReader API) | Browser memory (base64) | Microsoft Exchange (as email attachment) |
-| User's OAuth token | Browser (MSAL.js) | Browser localStorage | Microsoft Azure AD only |
+| User's OAuth token | Browser (MSAL.js) | Browser sessionStorage | Microsoft Azure AD only |
 | Campaign history | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
 | Merge field values | Browser (JavaScript) | Browser memory only | Microsoft Exchange (merged into email) |
 | Email templates | Browser (JavaScript) | Browser localStorage | ❌ Nowhere |
@@ -98,6 +98,37 @@ Several v3.0 features store data in the browser's localStorage:
 - Clearing the browser's site data (Settings → Clear browsing data) removes ALL localStorage items.
 - localStorage data does **NOT roam** across devices — switching to a different computer means starting fresh.
 
+> **Note on authentication tokens:** MSAL authentication tokens (access tokens, refresh tokens) are stored in **`sessionStorage`**, NOT `localStorage`. This means tokens are automatically cleared when the browser tab is closed. This is a deliberate security measure — it prevents token theft from other same-origin pages and ensures credentials do not persist beyond the active session.
+
+> **Sign-out cleanup:** When the user signs out, MailMerge-Pro clears all PII (personally identifiable information) from localStorage, including cached user name and email.
+
+---
+
+## XSS Protection & Input Sanitization
+
+MailMerge-Pro implements comprehensive XSS (Cross-Site Scripting) protection:
+
+| Protection | Details |
+|---|---|
+| **`sanitizeHtml()` function** | Strips `<script>` tags, `<iframe>` tags, inline event handlers (e.g., `onclick`, `onerror`), and `javascript:` URLs from all HTML content |
+| **Template loading** | All loaded templates (built-in and custom) are sanitized before rendering |
+| **Signature loading** | Signatures fetched from Graph API or loaded from localStorage are sanitized before display |
+| **HTML template import** | Imported `.html` files are sanitized before insertion into the editor |
+| **Merge field escaping** | Merge field values are HTML-escaped when building HTML emails to prevent injection |
+| **Link URL validation** | Link insertion validates URL schemes — blocks `javascript:`, `data:`, and `vbscript:` protocols |
+
+### CDN Script Integrity
+
+All external CDN scripts are loaded with the `crossorigin="anonymous"` attribute to prevent credential leakage to CDN providers.
+
+### Outlook-Only Execution
+
+The add-in checks for the Office.js runtime environment at startup and refuses to run outside of Outlook. This prevents standalone browser access, reducing the attack surface.
+
+### Large Attachment Upload
+
+Attachments larger than 3 MB use a chunked upload session via the Graph API `createUploadSession` endpoint, rather than inline base64 encoding. This prevents memory issues and supports attachments up to 150 MB.
+
 ---
 
 ## Authentication Security
@@ -105,12 +136,15 @@ Several v3.0 features store data in the browser's localStorage:
 | Aspect | Details |
 |---|---|
 | **Protocol** | OAuth 2.0 with PKCE (Proof Key for Code Exchange) |
-| **Library** | MSAL.js 2.0 (Microsoft Authentication Library) |
-| **Token storage** | Browser localStorage (encrypted by MSAL) |
+| **Library** | MSAL.js v3.27.0 (Microsoft Authentication Library) — loaded from jsDelivr CDN |
+| **Auth method** | Nested App Authentication (NAA) via `createNestablePublicClientApplication` — the Microsoft-recommended approach for Office add-ins (2025+). NAA enables seamless SSO inside Outlook's task pane iframe, eliminating popup-blocked and redirect_in_iframe errors |
+| **Token storage** | Browser `sessionStorage` (tokens are automatically cleared when the browser tab closes — prevents token theft from other same-origin pages) |
 | **Token lifetime** | Access token: ~1 hour; Refresh token: ~24 hours |
-| **Login flow** | Popup window → Microsoft login page → token returned to add-in |
+| **Login flow** | NAA (seamless SSO brokered by Outlook) → Microsoft login page (only if needed) → token returned to add-in |
 | **Credentials** | MailMerge-Pro NEVER sees or handles user passwords |
 | **Scopes** | Only `Mail.Send`, `Mail.ReadWrite`, `User.Read` — minimum required |
+| **CDN integrity** | All CDN scripts loaded with `crossorigin="anonymous"` attribute |
+| **brk-multihub** | Azure AD app requires `brk-multihub://yourdomain.com` SPA redirect URI to enable NAA brokering |
 
 ### What MailMerge-Pro Can and Cannot Do
 
@@ -159,7 +193,7 @@ Several v3.0 features store data in the browser's localStorage:
 |---|---|---|
 | `login.microsoftonline.com` | User authentication | Login credentials (to Microsoft only) |
 | `graph.microsoft.com` | Send emails, read contacts | Email content (to Microsoft only) |
-| `alcdn.msauth.net` | Load MSAL.js library | None (downloads JavaScript library) |
+| `cdn.jsdelivr.net` | Load MSAL.js v3.27.0 library | None (downloads JavaScript library) |
 | `cdn.sheetjs.com` | Load SheetJS library | None (downloads JavaScript library) |
 | Your hosting URL | Load add-in HTML/JS/CSS | None (downloads add-in code) |
 
@@ -172,7 +206,7 @@ Several v3.0 features store data in the browser's localStorage:
 ```
 login.microsoftonline.com
 graph.microsoft.com
-alcdn.msauth.net
+cdn.jsdelivr.net
 cdn.sheetjs.com
 YOUR-HOSTING-DOMAIN (e.g., username.github.io)
 appsforoffice.microsoft.com
@@ -190,7 +224,7 @@ appsforoffice.microsoft.com
 | User data collected | ❌ None | ⚠️ License/usage data | ❌ None |
 | Analytics/tracking | ❌ None | ⚠️ Unknown | ❌ None |
 | Code auditable | ✅ Public GitHub repo | ❌ Minified/obfuscated | ❌ Compiled binary |
-| Auth method | MSAL.js (OAuth 2.0) | OAuth 2.0 | Desktop COM (no OAuth) |
+| Auth method | MSAL.js v3 (NAA — OAuth 2.0) | OAuth 2.0 | Desktop COM (no OAuth) |
 
 **MailMerge-Pro's open-source nature means any security team can audit the code** — something competitors cannot offer.
 

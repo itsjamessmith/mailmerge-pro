@@ -48,6 +48,8 @@ That's it — personalized emails sent to every row in your spreadsheet.
 
 **What it does:** Authenticates you with your Microsoft 365 account so MailMerge-Pro can send emails on your behalf using the Outlook API.
 
+**Authentication method:** MailMerge-Pro uses **Nested App Authentication (NAA)** — the Microsoft-recommended approach for Office add-ins (2025+). NAA enables seamless single sign-on (SSO) inside Outlook's task pane without popup windows or redirects. Under the hood, MSAL v3 calls `createNestablePublicClientApplication` so Outlook can broker authentication on behalf of the add-in. This eliminates common issues like "popup blocked" and "redirect_in_iframe" errors.
+
 **Step-by-step:**
 
 1. Open **Outlook** (web at outlook.office.com or the desktop app).
@@ -55,7 +57,7 @@ That's it — personalized emails sent to every row in your spreadsheet.
 3. Click the **MailMerge-Pro** icon in the ribbon toolbar. On Outlook Web, look under the **"…" (More actions)** menu if the icon isn't visible.
 4. The add-in task pane opens on the right side of the compose window.
 5. Click the **"Sign in with Microsoft"** button.
-6. A popup window appears. Select your **Microsoft 365 account** or enter your credentials.
+6. NAA authenticates you seamlessly through Outlook — in most cases, you're signed in automatically without a popup. If prompted, select your **Microsoft 365 account** or enter your credentials.
 7. On first sign-in, you'll see a **permissions consent screen**. Review the permissions:
    - *Send mail as you* — required to send merge emails
    - *Read your profile* — to display your name and email
@@ -63,10 +65,20 @@ That's it — personalized emails sent to every row in your spreadsheet.
 9. The task pane updates to show your name and email address at the top.
 
 **Tips & Gotchas:**
-- If the consent popup is blocked, check your browser's popup blocker settings.
+- NAA provides seamless SSO — most users are signed in automatically without a popup.
 - Admin-consented tenants skip the individual consent step.
 - If you see "Need admin approval," contact your IT administrator to grant tenant-wide consent.
 - Sign-in persists across sessions — you won't need to re-authenticate each time.
+- Authentication tokens are stored in **sessionStorage** (not localStorage), which means they are automatically cleared when the browser tab is closed for added security.
+
+### 1.1.1 Security Features
+
+MailMerge-Pro includes several built-in security protections:
+
+- **XSS Protection** — A `sanitizeHtml()` function strips script tags, iframes, event handlers, and `javascript:` URLs from all HTML content (templates, signatures, HTML imports). Merge field values are HTML-escaped when building emails. Link insertion validates URL schemes (blocks `javascript:`, `data:`, `vbscript:`).
+- **Session-scoped tokens** — MSAL tokens are stored in `sessionStorage`, not `localStorage`. Tokens are automatically cleared when the browser tab closes, preventing token theft from other same-origin pages.
+- **Outlook-only execution** — The add-in refuses to run outside of Outlook, blocking standalone browser access.
+- **Clean sign-out** — Signing out clears all personally identifiable information (PII) from localStorage.
 
 ---
 

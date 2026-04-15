@@ -50,6 +50,12 @@ This is a **one-time setup** per tenant.
        - For GitHub Pages: `https://USERNAME.github.io/mailmerge-pro/taskpane.html`
        - For Azure: `https://YOURAPP.azurestaticapps.net/taskpane.html`
 5. Click **Register**
+6. **Add brk-multihub Redirect URI (required for NAA):**
+   - After registration, go to **Authentication** in the left sidebar
+   - Under "Single-page application," click **"Add URI"**
+   - Add: `brk-multihub://YOUR-DOMAIN` (e.g., `brk-multihub://itsjamessmith.github.io`)
+   - Click **Save**
+   - This tells Microsoft that Outlook can broker authentication for the add-in via Nested App Authentication (NAA). Without this URI, NAA will not work.
 
 ### 2.2 Copy the IDs
 
@@ -161,9 +167,11 @@ const msalConfig = {
         authority: "https://login.microsoftonline.com/YOUR-TENANT-ID-HERE",
         redirectUri: "https://YOUR-HOSTING-URL/taskpane.html"
     },
-    cache: { cacheLocation: "localStorage" }
+    cache: { cacheLocation: "sessionStorage" }
 };
 ```
+
+> **Note:** MailMerge-Pro uses **MSAL v3.27.0** (loaded from jsDelivr CDN) and **Nested App Authentication (NAA)** via `createNestablePublicClientApplication`. The MSAL cache uses `sessionStorage` (not `localStorage`) so tokens are automatically cleared when the browser tab closes. This is a security improvement — tokens cannot be stolen by other same-origin pages.
 
 ### 4.4 Validate the Manifest
 
@@ -278,8 +286,8 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 
 | Error | Cause | Fix |
 |---|---|---|
-| "Auth library not loaded" | MSAL CDN blocked by proxy/firewall | Whitelist `alcdn.msauth.net` |
-| "Pop-up blocked" | Browser blocking sign-in popup | Allow popups for `login.microsoftonline.com` |
+| "Auth library not loaded" | MSAL CDN blocked by proxy/firewall | Whitelist `cdn.jsdelivr.net` |
+| "Pop-up blocked" | Browser blocking sign-in popup (legacy — NAA eliminates this in most cases) | Allow popups for `login.microsoftonline.com` |
 | "Permission denied" (403) | Admin consent not granted | Re-grant admin consent in Azure AD |
 | "Session expired" (401) | Token expired | Click Sign In again |
 | "Rate limited" (429) | Sending too fast | Increase delay to 3-5 seconds |
@@ -295,7 +303,7 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 |---|---|
 | `login.microsoftonline.com` | MSAL authentication |
 | `graph.microsoft.com` | Microsoft Graph API |
-| `alcdn.msauth.net` | MSAL.js CDN |
+| `cdn.jsdelivr.net` | MSAL.js v3 CDN (jsDelivr) |
 | `YOUR-HOSTING-URL` | Add-in HTML/JS/CSS |
 | `appsforoffice.microsoft.com` | Office.js library |
 | `cdn.sheetjs.com` | SheetJS Excel parser |
@@ -310,7 +318,9 @@ New-ManagementRoleAssignment -Role "My Custom Apps" -User "user@domain.com"
 |---|---|
 | **Data processing** | 100% client-side — no data leaves the browser/Outlook |
 | **No backend server** | Static files only — no server-side processing |
-| **Authentication** | MSAL.js with Azure AD — industry standard OAuth 2.0 |
+| **Authentication** | MSAL.js v3.27.0 with Nested App Authentication (NAA) — Microsoft-recommended OAuth 2.0 for Office add-ins |
+| **Token storage** | `sessionStorage` — tokens cleared when browser tab closes (security improvement over localStorage) |
+| **XSS protection** | `sanitizeHtml()` strips script tags, iframes, event handlers, javascript: URLs from all HTML content |
 | **Email sending** | Through user's own Exchange Online mailbox via Graph API |
 | **Spreadsheet data** | Read in-browser by SheetJS — never uploaded anywhere |
 | **Attachments** | Read in-browser as base64 — sent directly via Graph API |
@@ -424,3 +434,7 @@ All permissions are **delegated** (act as the signed-in user), not application-l
 ```
 
 **Total setup time: ~15 minutes**
+
+---
+
+*© 2026 MailMerge-Pro. All rights reserved.*
